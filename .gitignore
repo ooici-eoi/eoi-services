@@ -22,11 +22,9 @@ downloads/
 bin/
 .installed.cfg
 .idea
-buildout.cfg
-.idea
 msc.*
-reslocal/config/pyon.local.yml
-reslocal/config/logging.local.yml
+res/config/pyon.local.yml
+res/config/logging.local.yml
 logs
 res/config/*~*
 scripts/*~*

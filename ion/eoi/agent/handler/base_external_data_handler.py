@@ -5,9 +5,8 @@ __author__ = 'cmueller'
 from pyon.service.service import BaseClients
 from pyon.public import IonObject
 from pyon.public import log
-from zope.interface import implements
 from ion.eoi.agent.interface.iexternal_data_handler_controller import IExternalDataHandlerController
-from interface.services.coi.iresource_registry_service import ResourceRegistryServiceProcessClient
+from zope.interface import implements
 
 # Observatory Status Types
 OBSERVATORY_ONLINE = 'ONLINE'

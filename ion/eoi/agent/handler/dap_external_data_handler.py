@@ -10,7 +10,6 @@ import cdms2
 import hashlib
 import pydap
 from pydap.client import open_url
-from pyon.util.log import log
 
 
 class DapExternalDataHandler(BaseExternalDataHandler):
