@@ -18,7 +18,6 @@ PROTOCOL_TYPE_DAP = "DAP"
 class BaseExternalDataHandler():
     """ Base implementation of the External Observatory Handler"""
     implements(IExternalDataHandlerController)
-    dependencies = ['resource_registry']
 
     _ext_provider_res = None
     _ext_data_source_res = None
@@ -97,7 +96,7 @@ class BaseExternalDataHandler():
 
     def __repr__(self):
 #        return "on=%s off=%s" % (self.OBSERVATORY_ONLINE, self.OBSERVATORY_OFFLINE)
-        return "\n>> ExternalObservatory:\n%s\n>> ExternalDataProducer:\n%s\n>>ExternalDataSet\n%s" % (self._ext_provider_res, self._ext_data_source_res, self._ext_dataset_res)
+        return "\n>> ExternalDataProvider:\n%s\n>> DataSource:\n%s\n>>ExternalDataset\n%s" % (self._ext_provider_res, self._ext_data_source_res, self._ext_dataset_res)
 
 
 

@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     ret = get_dataset(GHPM)
 
-    dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[EXTERNAL_DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
+    dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
 
     td=timedelta(days=-1)
     edt=datetime.utcnow()

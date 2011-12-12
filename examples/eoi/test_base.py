@@ -6,13 +6,11 @@ from pyon.service.service import BaseClients
 from pyon.util.context import LocalContextMixin
 from pyon.public import IonObject
 from pyon.public import log
-from interface.services.coi.iresource_registry_service import ResourceRegistryServiceProcessClient
-from interface.services.coi.idatastore_service import DatastoreServiceProcessClient
 import pprint
 from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
 
 EXTERNAL_DATA_PROVIDER = "ext_data_prov"
-EXTERNAL_DATA_SOURCE = "ext_data_src"
+DATA_SOURCE = "data_src"
 EXTERNAL_DATA_SET = "ext_data_set"
 DAP_DS_DESC = "dap_ds_desc"
 
@@ -139,7 +137,7 @@ def get_dataset(x):
 
     ret = {}
     ret[EXTERNAL_DATA_PROVIDER] = IonObject(RT.ExternalDataProvider, dprov)
-    ret[EXTERNAL_DATA_SOURCE] = IonObject(RT.ExternalDataSource, dsrc)
+    ret[DATA_SOURCE] = IonObject(RT.DataSource, dsrc)
     ret[EXTERNAL_DATA_SET] = IonObject(RT.ExternalDataset, dset)
     ret[DAP_DS_DESC] = IonObject("DapDatasetDescription", dsdesc)
     return ret
@@ -185,7 +183,7 @@ def _setup():
 
 if __name__ == '__main__':
     ret = get_dataset(AST2)
-    dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[EXTERNAL_DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
+    dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
     import pprint
     pprint.pprint(dsh)
 
