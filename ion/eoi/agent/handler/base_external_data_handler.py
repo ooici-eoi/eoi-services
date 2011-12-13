@@ -77,13 +77,19 @@ class BaseExternalDataHandler():
     def has_new_data(self, **kwargs):
         return False
 
-    def acquire_new_data(self, request=None, **kwargs):
+    def acquire_data(self, request=None, **kwargs):
+        return NotImplemented
+
+    def acquire_new_data(self, **kwargs):
         return NotImplemented
 
     def acquire_historical_data(self, **kwargs):
         return NotImplemented
 
     def get_signature(self, recalculate=False, **kwargs):
+        return NotImplemented
+
+    def get_attributes(self, var_name=None):
         return NotImplemented
 
     def compare(self, BaseExternalObservatoryHandler=None):

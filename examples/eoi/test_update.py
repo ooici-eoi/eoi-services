@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 if __name__ == '__main__':
 
-    ret = get_dataset(GHPM)
+    ret = get_dataset(HFR)
 
     dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
 
@@ -15,15 +15,15 @@ if __name__ == '__main__':
     edt=datetime.utcnow()
     sdt=edt+td
 
-    
-    req = {}
-    req["start_time"] = sdt
-    req["end_time"] = edt
-    req["lower_left_x"] = 40
-    req["lower_left_y"] = -80
-    req["upper_right_x"] = 50
-    req["upper_right_y"] = -70
-    req_obj = IonObject("ExternalDataRequest", req)
+    req_obj = IonObject("ExternalDataRequest", name="test_request")
+    req_obj.start_time = sdt
+    req_obj.end_time = edt
+    req_obj.bbox["lower_left_x"] = 40
+    req_obj.bbox["lower_left_y"] = -80
+    req_obj.bbox["upper_right_x"] = 50
+    req_obj.bbox["upper_right_y"] = -70
 
-    resp = dsh.acquire_new_data(req_obj)
+    print req_obj
+
+    resp = dsh.acquire_data_old(req_obj)
 #    print resp

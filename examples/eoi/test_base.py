@@ -6,6 +6,7 @@ from pyon.service.service import BaseClients
 from pyon.util.context import LocalContextMixin
 from pyon.public import IonObject
 from pyon.public import log
+import os
 import pprint
 from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
 
@@ -21,6 +22,8 @@ SSTA = "ssta"
 GHPM = "ghpm"
 COMP1 = "comp1"
 COMP2 = "comp2"
+
+CWD = os.getcwd()
 
 class EoiObjectSetupClients(BaseClients):
     def __init__(self, process=None):
@@ -116,7 +119,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_1"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_1"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"
@@ -129,7 +132,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_1"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_1"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"
@@ -142,7 +145,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_2"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_2"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_2"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"
@@ -199,8 +202,12 @@ def _setup():
 if __name__ == '__main__':
     ret = get_dataset(AST2)
     dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
+    print "Global Attrs: %s" % dsh.get_attributes()
+    print "TimeVar Attrs: %s" % dsh.get_attributes(var_name="time")
+
+
     import pprint
-    pprint.pprint(dsh)
+#    pprint.pprint(dsh)
 
 #    dataset_map = _setup()
 #    pprint.pprint(dataset_map)

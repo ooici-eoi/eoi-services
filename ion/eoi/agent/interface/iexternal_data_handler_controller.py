@@ -31,12 +31,27 @@ class IExternalDataHandlerController(Interface):
         """
         pass
 
+    def acquire_data(request, **kwargs):
+        """
+        """
+        pass
+
     def acquire_new_data(**kwargs):
         """
         """
         pass
 
     def acquire_historical_data(**kwargs):
+        """
+        """
+        pass
+
+    def get_attributes(var_name=None):
+        """
+        """
+        pass
+
+    def compare(BaseExternalObservatoryHandler=None):
         """
         """
         pass

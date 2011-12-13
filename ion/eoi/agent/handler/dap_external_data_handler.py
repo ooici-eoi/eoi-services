@@ -4,6 +4,7 @@ __author__ = 'cmueller'
 
 from pyon.public import log
 from ion.eoi.agent.handler.base_external_data_handler import BaseExternalDataHandler
+import netCDF4
 from netCDF4 import Dataset, date2index
 from datetime import datetime, timedelta
 import cdms2
@@ -49,7 +50,19 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         self.ds = Dataset(self.ds_url)
 #       self.ds = open_url(self.ds_url)
 
-    def acquire_new_data(self, request=None, **kwargs):
+    def get_attributes(self, var_name=None):
+        """
+        Returns a dictionary containing the name/value pairs for all attributes in the given scope.
+        @param var_name The name of a variable in this dataset.  If no var_name is provided, returns the global_attributes for the dataset
+        """
+        if (var_name is None) or (var_name not in self.ds.variables):
+            var = self.ds
+        else:
+            var = self.ds.variables[var_name]
+        
+        return dict((a, getattr(var, a)) for a in var.ncattrs())
+
+    def acquire_data_old(self, request=None, **kwargs):
 
         td = timedelta(hours=-1)
         edt = datetime.utcnow()
@@ -60,14 +73,14 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 sdt = request.start_time
             if "end_time" in request:
                 edt = request.end_time
-            if "lower_left_x" in request:
-                lower_left_x = request.lower_left_x
-            if "lower_left_y" in request:
-                lower_left_y = request.lower_left_y
-            if "upper_right_x" in request:
-                upper_right_x = request.upper_right_x
-            if "upper_right_y" in request:
-                upper_right_y = request.upper_right_y
+            if "lower_left_x" in request.bbox:
+                lower_left_x = request.bbox["lower_left_x"]
+            if "lower_left_y" in request.bbox:
+                lower_left_y = request.bbox["lower_left_y"]
+            if "upper_right_x" in request.bbox:
+                upper_right_x = request.bbox["upper_right_x"]
+            if "upper_right_y" in request.bbox:
+                upper_right_y = request.bbox["upper_right_y"]
 
         tvar = self.ds.variables[self._dataset_desc_obj.temporal_dimension]
         tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
