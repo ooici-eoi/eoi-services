@@ -16,10 +16,13 @@ if __name__ == '__main__':
     sdt=edt+td
 
     
-    req={}
+    req = {}
     req["start_time"] = sdt
     req["end_time"] = edt
-
+    req["lower_left_x"] = 40
+    req["lower_left_y"] = -80
+    req["upper_right_x"] = 50
+    req["upper_right_y"] = -70
     req_obj = IonObject("ExternalDataRequest", req)
 
     resp = dsh.acquire_new_data(req_obj)

@@ -48,6 +48,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "HFRNet/USEGC/6km/hourly/RTV"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
 #        dsd_obj = IonObject("DapDatasetDescription", dsdesc)
 #
 #        dset["dataset_description"] = dsd_obj
@@ -66,6 +68,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "hioos/hfr/kokagg"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     elif x == AST2:
         dprov = {}
         dprov["institution_name"]="OOI CGSN"
@@ -85,6 +89,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "ooi/AS02CPSM_R_M.nc"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     elif x == SSTA:
         dprov = {}
         dprov["institution_name"]="Remote Sensing Systems"
@@ -99,6 +105,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "satellite/GR/ssta/1day"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     elif x == GHPM:
         dprov = {}
         dsrc = {}
@@ -110,6 +118,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     elif x == COMP1:
         dprov = {}
         dsrc = {}
@@ -121,6 +131,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     elif x == COMP2:
         dprov = {}
         dsrc = {}
@@ -132,6 +144,8 @@ def get_dataset(x):
         dsdesc = {}
         dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_2"
         dsdesc["temporal_dimension"] = "time"
+        dsdesc["zonal_dimension"] = "lon"
+        dsdesc["meridional_dimension"] = "lat"
     else:
         raise Exception("invalid dataset specified: %s" % x)
 
@@ -140,6 +154,7 @@ def get_dataset(x):
     ret[DATA_SOURCE] = IonObject(RT.DataSource, dsrc)
     ret[EXTERNAL_DATA_SET] = IonObject(RT.ExternalDataset, dset)
     ret[DAP_DS_DESC] = IonObject("DapDatasetDescription", dsdesc)
+    print ret[DAP_DS_DESC]
     return ret
 
 def _setup():

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import cdms2
 import hashlib
 import pydap
+import numpy
 from pydap.client import open_url
 
 
@@ -50,40 +51,60 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
     def acquire_new_data(self, request=None, **kwargs):
 
-        td=timedelta(hours=-1)
-        edt=datetime.utcnow()
-        sdt=edt+td
+        td = timedelta(hours=-1)
+        edt = datetime.utcnow()
+        sdt = edt + td
 
         if request is not None:
             if "start_time" in request:
                 sdt = request.start_time
             if "end_time" in request:
                 edt = request.end_time
+            if "lower_left_x" in request:
+                lower_left_x = request.lower_left_x
+            if "lower_left_y" in request:
+                lower_left_y = request.lower_left_y
+            if "upper_right_x" in request:
+                upper_right_x = request.upper_right_x
+            if "upper_right_y" in request:
+                upper_right_y = request.upper_right_y
 
         tvar = self.ds.variables[self._dataset_desc_obj.temporal_dimension]
         tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
         if tindices[0] == tindices[1]:
             # add one to the end index to ensure we get everything
-            tindices[1] = tindices[1] + 1
+            tindices[1] += 1
 
         print ">>> tindices [start end]: %s" % tindices
 
-        dims=self.ds.dimensions.items()
+        dims = self.ds.dimensions.items()
 
-        ret={}
+        ret = {}
 #        ret["times"] = tvar[sti:eti]
         for vk in self.ds.variables:
             print "***"
             print vk
             var = self.ds.variables[vk]
             t_idx = -1
+            lon_idx = -1
+            lat_idx = -1
             if self._dataset_desc_obj.temporal_dimension in var.dimensions:
                 t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
+            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
+                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
+            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
+                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
 
-            lst=[]
+            lst = []
             for i in range(len(var.dimensions)):
                 if i == t_idx:
                     lst.append(slice(tindices[0], tindices[1]))
+                elif i == lon_idx:
+                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
+                                                 self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
+                elif i == lat_idx:
+                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
+                                                 self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
                 else:
                     lst.append(slice(0, len(dims[i][1])))
             print lst
@@ -92,7 +113,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             ret[vk] = tpl, var[tpl]
             print ret[vk]
             print "***"
-            
+
 #                if idx == 0:
 #                    ret[vk] = var[sti:eti]
 #                elif idx == 1:
@@ -104,8 +125,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #            else:
 #                ret[vk] = "Non-temporal Dimension ==> ignore for now"
 #                continue
-        
-
 
         return ret
 
@@ -128,11 +147,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         """
         if recalculate:
             self.signature = None
-            
+
         if self.signature is not None:
             return self.signature
-        
-        ret={}
+
+        ret = {}
         # sha for time values
 #        tvar=self.find_time_axis()
 #        if tvar is not None:
@@ -143,7 +162,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #            ret['times']=None
 
         # sha for variables
-        var_map={}
+        var_map = {}
         for vk in self.ds.variables:
         #        sha_vars.update(str(self.ds))
             var = self.ds.variables[vk]
@@ -159,7 +178,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
             var_map[vk] = var_sha.hexdigest(), var_atts
 
-        sha_vars=hashlib.sha1()
+        sha_vars = hashlib.sha1()
         for key in var_map:
             sha_vars.update(var_map[key][0])
 
@@ -307,7 +326,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #        for children in walk_dataset(self.ds):
 #            for child in children:
 #                print child.path, child
-
 
 #    def get_dataset_size(self):
 #        return self.ds
