@@ -1,4 +1,5 @@
 __author__ = 'timgiguere'
+__author__ = 'cmueller'
 
 from ion.eoi.agent.handler.dap_external_data_handler \
     import DapExternalDataHandler
@@ -14,6 +15,8 @@ SSTA = "ssta"
 GHPM = "ghpm"
 COMP1 = "comp1"
 COMP2 = "comp2"
+COADS = "coads"
+NCOM = "ncom"
 
 
 class DataAcquisitionManagementServicePlaceholder:
@@ -24,10 +27,14 @@ class DataAcquisitionManagementServicePlaceholder:
         external_data_set = self.create_external_data_set(ds_id)
         dap_ds_desc = self.create_dap_ds_desc(ds_id)
 
-        dsh = DapExternalDataHandler(external_data_provider,
-                                     data_source,
-                                     external_data_set,
-                                     dap_ds_desc)
+        protocol_type = data_source.protocol_type
+        if protocol_type == "DAP":
+            dsh = DapExternalDataHandler(external_data_provider,
+                                         data_source,
+                                         external_data_set,
+                                         dap_ds_desc)
+        else:
+            raise Exception("Unknown Protocol Type: %s" % protocol_type)
 
         return dsh
 
@@ -98,6 +105,12 @@ class DataAcquisitionManagementServicePlaceholder:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = ""
         elif ds_id == COMP2:
+            dsrc["protocol_type"] = "DAP"
+            dsrc["base_data_url"] = ""
+        elif ds_id == COADS:
+            dsrc["protocol_type"] = "DAP"
+            dsrc["base_data_url"] = ""
+        elif ds_id == NCOM:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = ""
 
@@ -193,6 +206,16 @@ class DataAcquisitionManagementServicePlaceholder:
             dsdesc["meridional_dimension"] = "lat"
         elif ds_id == COMP2:
             dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_2.nc"
+            dsdesc["temporal_dimension"] = "time"
+            dsdesc["zonal_dimension"] = "lon"
+            dsdesc["meridional_dimension"] = "lat"
+        elif ds_id == COADS:
+            dsdesc["dataset_path"] = CWD + "/test_data/coads.nc"
+            dsdesc["temporal_dimension"] = "time"
+            dsdesc["zonal_dimension"] = "lon"
+            dsdesc["meridional_dimension"] = "lat"
+        elif ds_id == NCOM:
+            dsdesc["dataset_path"] = CWD + "/test_data/ncom.nc"
             dsdesc["temporal_dimension"] = "time"
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
