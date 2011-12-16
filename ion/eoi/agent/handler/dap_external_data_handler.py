@@ -68,14 +68,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         if name in self.ds.variables:
             var = self.ds.variables[name]
-            var.set_auto_maskandscale(request.apply_maskandscale)
+            # Must turn off auto mask&scale - causes downstream issues if left on (default)
+            var.set_auto_maskandscale(False)
             if var.shape:
-                ## This doesn't seem to function as it should - returns all data instead of just the desired slice...
-#                data = Arrayterator(var, self.buffer_size)[slice_]
-                data = var[slice_]
+                data = Arrayterator(var, self.buffer_size)[slice_]
             else:
                 data = numpy.array(var.getValue())
-            typecode = data.dtype.char
+            typecode = var.dtype.char
             dims = var.dimensions
             attrs = self.get_attributes(var_name=name)
         else:
@@ -94,12 +93,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             typecode = 'S'
             data = numpy.array([''.join(row) for row in numpy.asarray(data)])
             dims = dims[:-1]
-
-#        print "\n\n>>>> '%s'\ntype:\n\t%s\natts:\n\t%s\n\n" % (name, attrs, typecode)
-        if isinstance(data, Arrayterator):
-            print "\n\n>>>> DATA '%s' (a):\n%s\n\n" % (name, data.var[:])
-        else:
-            print "\n\n>>>> DATA '%s':\n%s\n\n" % (name, data)
 
         return name, data, typecode, dims, attrs
 
