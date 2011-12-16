@@ -18,10 +18,10 @@ class DataAcquisitionManagementServicePlaceholder:
 
     def get_data_handlers(self, ds_id=''):
 
-        external_data_provider = self.create_external_data_provider(ds_id)
-        data_source = self.create_data_source(ds_id)
-        external_data_set = self.create_external_data_set(ds_id)
-        dap_ds_desc = self.create_dap_ds_desc(ds_id)
+        external_data_provider = self.create_external_data_provider(ds_id.lowercase())
+        data_source = self.create_data_source(ds_id.lowercase())
+        external_data_set = self.create_external_data_set(ds_id.lowercase())
+        dap_ds_desc = self.create_dap_ds_desc(ds_id.lowercase())
 
         dsh = DapExternalDataHandler(external_data_provider,
                                      data_source,

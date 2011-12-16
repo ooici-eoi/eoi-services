@@ -4,7 +4,6 @@ from pyon.public import IonObject, RT
 from pyon.container.shell_api import container
 from pyon.service.service import BaseClients
 from pyon.util.context import LocalContextMixin
-from pyon.public import IonObject
 from pyon.public import log
 import os
 import pprint
