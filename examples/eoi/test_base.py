@@ -119,7 +119,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_1"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_1"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_1.nc"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"
@@ -132,7 +132,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_1"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_1"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_1.nc"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"
@@ -145,7 +145,7 @@ def get_dataset(x):
 #        dset["dataset_path"] = "/Users/cmueller/Development/OOI/ast2_sample_data/ast2_ghpm_split/ast2_ghpm_spp_ctd.nc_2"
 #        dset["temporal_id"] = "time"
         dsdesc = {}
-        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd.nc_2"
+        dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_2.nc"
         dsdesc["temporal_dimension"] = "time"
         dsdesc["zonal_dimension"] = "lon"
         dsdesc["meridional_dimension"] = "lat"

@@ -4,8 +4,10 @@ from ion.eoi.agent.handler.dap_external_data_handler \
     import DapExternalDataHandler
 from pyon.core.bootstrap import IonObject
 from pyon.public import RT
+import os
 
 HFR = "hfr"
+HFR_LOCAL = "hfr_local"
 KOKAGG = "kokagg"
 AST2 = "ast2"
 SSTA = "ssta"
@@ -17,7 +19,6 @@ COMP2 = "comp2"
 class DataAcquisitionManagementServicePlaceholder:
 
     def get_data_handlers(self, ds_id=''):
-
         external_data_provider = self.create_external_data_provider(ds_id)
         data_source = self.create_data_source(ds_id)
         external_data_set = self.create_external_data_set(ds_id)
@@ -32,7 +33,7 @@ class DataAcquisitionManagementServicePlaceholder:
 
     def create_external_data_provider(self, ds_id=''):
         dprov = {}
-        if ds_id == HFR:
+        if ds_id == HFR or ds_id == HFR_LOCAL:
             dprov["institution_name"] = "HFRNET UCSD"
             dprov["institution_id"] = "342"
         elif ds_id == KOKAGG:
@@ -76,6 +77,9 @@ class DataAcquisitionManagementServicePlaceholder:
         if ds_id == HFR:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
+        if ds_id == HFR_LOCAL:
+            dsrc["protocol_type"] = "DAP"
+            dsrc["base_data_url"] = ""
         elif ds_id == KOKAGG:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = "http://oos.soest.hawaii.edu/thredds/dodsC/"
@@ -150,9 +154,15 @@ class DataAcquisitionManagementServicePlaceholder:
         pass
 
     def create_dap_ds_desc(self, ds_id=''):
+        CWD = os.getcwd()
         dsdesc = {}
         if ds_id == HFR:
             dsdesc["dataset_path"] = "HFRNet/USEGC/6km/hourly/RTV"
+            dsdesc["temporal_dimension"] = "time"
+            dsdesc["zonal_dimension"] = "lon"
+            dsdesc["meridional_dimension"] = "lat"
+        if ds_id == HFR_LOCAL:
+            dsdesc["dataset_path"] = CWD + "/test_data/hfr.nc"
             dsdesc["temporal_dimension"] = "time"
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
@@ -172,17 +182,17 @@ class DataAcquisitionManagementServicePlaceholder:
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
         elif ds_id == GHPM:
-            dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
+            dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_1.nc"
             dsdesc["temporal_dimension"] = "time"
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
         elif ds_id == COMP1:
-            dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_1"
+            dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_1.nc"
             dsdesc["temporal_dimension"] = "time"
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
         elif ds_id == COMP2:
-            dsdesc["dataset_path"] = "/Users/timgiguere/Documents/Dev/sample_data/ast2_ghpm_spp_ctd.nc_2"
+            dsdesc["dataset_path"] = CWD + "/test_data/ast2_ghpm_spp_ctd_2.nc"
             dsdesc["temporal_dimension"] = "time"
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
