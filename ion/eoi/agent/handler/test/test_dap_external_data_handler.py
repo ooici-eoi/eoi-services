@@ -3,9 +3,9 @@ __author__ = 'timgiguere'
 import tempfile
 import os
 from netCDF4 import Dataset
-from pyon.util.unit_test import pop_last_call, PyonTestCase
 from nose.plugins.attrib import attr
 from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
+from pyon.util.unit_test import pop_last_call, PyonTestCase
 
 @attr('UNIT', group='eoi')
 class TestDapExternalDataHandler(PyonTestCase):
