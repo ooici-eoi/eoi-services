@@ -9,9 +9,8 @@ from netCDF4 import Dataset, date2index
 from datetime import datetime, timedelta
 import cdms2
 import hashlib
-import pydap
 import numpy
-from pydap.client import open_url
+from arrayterator import Arrayterator
 
 
 class DapExternalDataHandler(BaseExternalDataHandler):
@@ -26,6 +25,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     cdms_ds = None
     tvar = None
     signature = None
+    buffer_size = 10000
 
     def __init__(self, data_provider=None, data_source=None, ext_dataset=None, dataset_desc=None, update_desc=None, *args, **kwargs):
         BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, dataset_desc, update_desc, *args, **kwargs)
@@ -43,7 +43,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         if self._ext_data_source_res is not None and self._dataset_desc_obj is not None:
             self.ds_url = self._ext_data_source_res.base_data_url + self._dataset_desc_obj.dataset_path
-            print self.ds_url
+#            print self.ds_url
         else:
             raise Exception("Cannot construct dataset url")
 
@@ -61,6 +61,42 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             var = self.ds.variables[var_name]
         
         return dict((a, getattr(var, a)) for a in var.ncattrs())
+
+    def acquire_data(self, request=None, **kwargs):
+        name = request.name
+        slice_ = request.slice
+
+        if name in self.ds.variables:
+            var = self.ds.variables[name]
+            # Must turn off auto mask&scale - causes downstream issues if left on (default)
+            var.set_auto_maskandscale(False)
+            if var.shape:
+                data = Arrayterator(var, self.buffer_size)[slice_]
+            else:
+                data = numpy.array(var.getValue())
+            typecode = var.dtype.char
+            dims = var.dimensions
+            attrs = self.get_attributes(var_name=name)
+        else:
+            for var in self.ds.variables:
+                var = self.ds.variables[var]
+                if name in var.dimensions:
+                    size = var.shape[list(var.dimensions).index(name)]
+                    break
+            data = numpy.arange(size)[slice_]
+            typecode = data.dtype.char
+            dims, attrs = (name,), {}
+
+#        print "tc=%s dims=%s" % (typecode, dims)
+
+        if typecode == 'S1' or typecode == 'S':
+            typecode = 'S'
+            data = numpy.array([''.join(row) for row in numpy.asarray(data)])
+            dims = dims[:-1]
+
+        return name, data, typecode, dims, attrs
+
+
 
     def acquire_data_old(self, request=None, **kwargs):
 
