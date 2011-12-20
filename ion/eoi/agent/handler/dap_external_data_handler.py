@@ -271,6 +271,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         my_sig = self.get_signature(recalculate=True)
         sig2 = dsh.get_signature(recalculate=True)
 
+        dcr = DatasetComparisonResult()
+
         if my_sig[0] != sig2[0]:
             #TODO: make info
             print "=!> Full signatures differ"
@@ -284,11 +286,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Dimension '%s' does not exist in 2nd dataset" % dk
+                        dcr.add_dim(dk, True)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Dimension '%s' differs" % dk
+                        dcr.add_dim(dk)
                     else:
                         #TODO: make debug
 #                        print "====> Dimension '%s' is equal" % dk
@@ -307,11 +311,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
+                        dcr.add_gbl_attr(gk, True)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Global Attribute '%s' differs" % gk
+                        dcr.add_gbl_attr(gk)
                     else:
                         #TODO: make debug
 #                        print "====> Global Attribute '%s' is equal" % gk
@@ -343,11 +349,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                             else:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
+                                dcr.add_var_attr(vak, True)
                                 continue
 
                             if va1 != va2:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' differs" % vak
+                                dcr.add_var_attr(vak)
                             else:
                                 #TODO: make debug
 #                                print "======> Variable Attribute '%s' is equal" % vak
@@ -359,6 +367,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         else:
             #TODO: make debug
             print "==> Datasets are equal"
+
+        return dcr
 
 #    def walk_dataset(self, top):
 #        values = top.group.values()
@@ -436,3 +446,50 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     def __repr__(self):
 #        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self.ds.keys())
         return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self.ds, str(self.find_time_axis()), self._pprint_signature())
+
+
+class DatasetComparisonResult():
+
+    new_dims = []
+    mod_dims = []
+    new_gatts = []
+    mod_gatts = []
+    new_varatts = []
+    mod_varatts = []
+
+    def __init__(self):
+        pass
+
+    def add_dim(self, dim_name, is_new=False):
+        if is_new:
+            self.new_dims.append(dim_name)
+        else:
+            self.mod_dims.append(dim_name)
+
+    def add_gbl_attr(self, gbl_attr_name, is_new=False):
+        if is_new:
+            self.new_gatts.append(gbl_attr_name)
+        else:
+            self.mod_gatts.append(gbl_attr_name)
+
+    def add_var_attr(self, var_attr_name, is_new=False):
+        if is_new:
+            self.new_varatts.append(var_attr_name)
+        else:
+            self.mod_varatts.append(var_attr_name)
+
+    def get_result(self):
+        if self.new_dims:
+            return ("NEW_DIM", self.new_dims)
+        if self.mod_dims:
+            return ("MOD_DIMS", self.mod_dims)
+        if self.new_varatts:
+            return ("NEW_VAR_ATTS", self.new_varatts)
+        if self.mod_varatts:
+            return ("MOD_VAR_ATTS", self.mod_varatts)
+        if self.new_gatts:
+            return ("NEW_GBL_ATTS", self.new_gatts)
+        if self.mod_gatts:
+            return ("MOD_GBL_ATTS", self.mod_gatts)
+
+        return ("EQUAL",[])
