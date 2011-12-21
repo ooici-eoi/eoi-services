@@ -39,7 +39,7 @@ if __name__ == '__main__':
     ret = get_dataset(AST2)
     dsh = DapExternalDataHandler(ret[EXTERNAL_DATA_PROVIDER], ret[DATA_SOURCE], ret[EXTERNAL_DATA_SET], ret[DAP_DS_DESC])
     print "Global Attrs: %s" % dsh.get_attributes()
-    print "TimeVar Attrs: %s" % dsh.get_attributes(var_name="time")
+    print "TimeVar Attrs: %s" % dsh.get_attributes(scope="time")
 
 
 #    import pprint

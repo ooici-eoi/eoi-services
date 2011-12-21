@@ -19,6 +19,12 @@ class BaseExternalDataHandler():
     """ Base implementation of the External Observatory Handler"""
     implements(IExternalDataHandlerController)
 
+    DATA_SAMPLING_FIRST_LAST = "FIRST_LAST"
+    DATA_SAMPLING_FULL = "FULL"
+    DATA_SAMPLING_SHOTGUN = "SHOTGUN"
+    DATA_SAMPLING_SHOTGUN_COUNT = "SHOTGUN_COUNT"
+    DATA_SAMPLING_NONE = "NONE"
+
     _ext_provider_res = None
     _ext_data_source_res = None
     _ext_dataset_res = None
@@ -31,47 +37,8 @@ class BaseExternalDataHandler():
         self._ext_dataset_res = ext_dset
         self._dataset_desc_obj = ds_desc
         self._update_desc_obj = update_desc
-    
-    # IExternalObservatoryController functions
-#    def base_initialize(self, data_provider=None, data_source=None, ext_dset=None, ds_desc=None, update_desc=None, *args, **kwargs):
-##        if data_provider is None:
-##            edp = {}
-##            edp["institution_name"] = "ASA"
-##            edp["institution_id"] = "1"
-##            edp["institution_webpage"] = "www.asascience.com"
-##            edp["contact_name"] = "Christopher Mueller"
-##            edp["contact_phone"] = "401-789-6224"
-##            edp["contact_email"] = "cmueller@asascience.com"
-##            edp["contact_address"] = "55 Village Square Drive, South Kingstown, RI, 02886"
-##            data_provider = edp
-##
-##        if data_source is None:
-##            dp = {}
-##            dp["base_data_url"] = "http://oos.soest.hawaii.edu/thredds/"
-##            dp["protocol_type"] = PROTOCOL_TYPE_DAP
-##            data_source = dp
-##
-##        if ext_dset is None:
-##            ds = {}
-##            ds["dataset_path"] = "dodsC/hioos/hfr/kokagg"
-##            ds["temporal_id"] = "time"
-##            ext_dset = ds
-##
-##        self.ext_observatory_object = IonObject("ExternalDataProvider", data_provider)
-##        self.ext_data_producer_object = IonObject("ExternalDataSource", data_source)
-##        self.ext_data_set_object = IonObject("ExternalDataset", ext_dset)
-#
-#        if len(kwargs) > 0:
-#            log.info("base_initialize():: Keyword args:")
-#            for key in kwargs:
-#                log.info("  %s: %s" % (key, kwargs[key]))
-#
-#        return
 
     def get_status(self, **kwargs):
-        return NotImplemented
-
-    def get_catalog(self, **kwargs):
         return NotImplemented
 
     def has_new_data(self, **kwargs):
@@ -83,13 +50,10 @@ class BaseExternalDataHandler():
     def acquire_new_data(self, **kwargs):
         return NotImplemented
 
-    def acquire_historical_data(self, **kwargs):
+    def get_signature(self, recalculate=False, data_sampling=DATA_SAMPLING_NONE, **kwargs):
         return NotImplemented
 
-    def get_signature(self, recalculate=False, **kwargs):
-        return NotImplemented
-
-    def get_attributes(self, var_name=None):
+    def get_attributes(self, scope=None):
         return NotImplemented
 
     def compare(self, BaseExternalObservatoryHandler=None):
@@ -103,10 +67,3 @@ class BaseExternalDataHandler():
     def __repr__(self):
 #        return "on=%s off=%s" % (self.OBSERVATORY_ONLINE, self.OBSERVATORY_OFFLINE)
         return "\n>> ExternalDataProvider:\n%s\n>> DataSource:\n%s\n>>ExternalDataset\n%s" % (self._ext_provider_res, self._ext_data_source_res, self._ext_dataset_res)
-
-
-
-class ExternalObservatoryHandlerClients(BaseClients):
-    def __init__(self, process=None):
-        BaseClients.__init__(self)
-        self.resource_registry = ResourceRegistryServiceProcessClient(process=process)

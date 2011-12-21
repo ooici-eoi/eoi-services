@@ -4,7 +4,6 @@ __author__ = 'cmueller'
 
 from pyon.public import log
 from ion.eoi.agent.handler.base_external_data_handler import BaseExternalDataHandler
-import netCDF4
 from netCDF4 import Dataset, date2index
 from datetime import datetime, timedelta
 import cdms2
@@ -14,11 +13,6 @@ from arrayterator import Arrayterator
 
 
 class DapExternalDataHandler(BaseExternalDataHandler):
-
-    SIGNATURE_DATA_SHOTGUN = "SHOTGUN"
-    SIGNATURE_DATA_SHOTGUN_COUNT = 5
-    SIGNATURE_DATA_FIRST_LAST = "FIRST_LAST"
-    SIGNATURE_DATA_FULL = "FULL"
 
     ds_url = None
     ds = None
@@ -41,8 +35,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #
 #        self.base_initialize(data_provider, data_source, ext_dataset, *args, **kwargs)
 
-        if self._ext_data_source_res is not None and self._dataset_desc_obj is not None:
-            self.ds_url = self._ext_data_source_res.base_data_url + self._dataset_desc_obj.dataset_path
+        if self._dataset_desc_obj is not None:
+            base_url=""
+            if self._ext_data_source_res is not None:
+                base_url = self._ext_data_source_res.base_data_url
+            self.ds_url = base_url + self._dataset_desc_obj.dataset_path
 #            print self.ds_url
         else:
             raise Exception("Cannot construct dataset url")
@@ -50,19 +47,23 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         self.ds = Dataset(self.ds_url)
 #       self.ds = open_url(self.ds_url)
 
-    def get_attributes(self, var_name=None):
+    def get_attributes(self, scope=None):
         """
         Returns a dictionary containing the name/value pairs for all attributes in the given scope.
-        @param var_name The name of a variable in this dataset.  If no var_name is provided, returns the global_attributes for the dataset
+        @param scope The name of a variable in this dataset.  If no scope is provided, returns the global_attributes for the dataset
         """
-        if (var_name is None) or (var_name not in self.ds.variables):
+        if (scope is None) or (scope not in self.ds.variables):
             var = self.ds
         else:
-            var = self.ds.variables[var_name]
+            var = self.ds.variables[scope]
         
         return dict((a, getattr(var, a)) for a in var.ncattrs())
 
     def acquire_data(self, request=None, **kwargs):
+        """
+        Returns data based on a request containing the name of a variable (request.name) and a tuple of slice objects (slice_)
+        @param request An object (nominally an IonObject of type PydapVarDataRequest) with "name" and "slice" attributes where: "name" == the name of the variable; and "slice" is a tuple ('var_name, (slice_1(), ..., slice_n()))
+        """
         name = request.name
         slice_ = request.slice
 
@@ -76,7 +77,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 data = numpy.array(var.getValue())
             typecode = var.dtype.char
             dims = var.dimensions
-            attrs = self.get_attributes(var_name=name)
+            attrs = self.get_attributes(scope=name)
         else:
             for var in self.ds.variables:
                 var = self.ds.variables[var]
@@ -96,104 +97,30 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return name, data, typecode, dims, attrs
 
+    def has_new_data(self, **kwargs):
+        repo_sig = None
+        # TODO: Get the "last" signature for this dataset from the repository (from the "UpdateDescription" object)
+
+        if repo_sig is None:
+            return True
+
+        # compare the repo_signature to the current dataset signature
+        dcr = self.compare(data_sampling=BaseExternalDataHandler.DATA_SAMPLING_FIRST_LAST)
+        dcr_result = dcr.get_result()
 
 
-    def acquire_data_old(self, request=None, **kwargs):
 
-        td = timedelta(hours=-1)
-        edt = datetime.utcnow()
-        sdt = edt + td
 
-        if request is not None:
-            if "start_time" in request:
-                sdt = request.start_time
-            if "end_time" in request:
-                edt = request.end_time
-            if "lower_left_x" in request.bbox:
-                lower_left_x = request.bbox["lower_left_x"]
-            if "lower_left_y" in request.bbox:
-                lower_left_y = request.bbox["lower_left_y"]
-            if "upper_right_x" in request.bbox:
-                upper_right_x = request.bbox["upper_right_x"]
-            if "upper_right_y" in request.bbox:
-                upper_right_y = request.bbox["upper_right_y"]
 
-        tvar = self.ds.variables[self._dataset_desc_obj.temporal_dimension]
-        tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
-        if tindices[0] == tindices[1]:
-            # add one to the end index to ensure we get everything
-            tindices[1] += 1
 
-        print ">>> tindices [start end]: %s" % tindices
-
-        dims = self.ds.dimensions.items()
-
-        ret = {}
-#        ret["times"] = tvar[sti:eti]
-        for vk in self.ds.variables:
-            print "***"
-            print vk
-            var = self.ds.variables[vk]
-            t_idx = -1
-            lon_idx = -1
-            lat_idx = -1
-            if self._dataset_desc_obj.temporal_dimension in var.dimensions:
-                t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
-            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
-                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
-            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
-                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
-
-            lst = []
-            for i in range(len(var.dimensions)):
-                if i == t_idx:
-                    lst.append(slice(tindices[0], tindices[1]))
-                elif i == lon_idx:
-                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
-                                                 self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
-                elif i == lat_idx:
-                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
-                                                 self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
-                else:
-                    lst.append(slice(0, len(dims[i][1])))
-            print lst
-            print "==="
-            tpl = tuple(lst)
-            ret[vk] = tpl, var[tpl]
-            print ret[vk]
-            print "***"
-
-#                if idx == 0:
-#                    ret[vk] = var[sti:eti]
-#                elif idx == 1:
-#                    ret[vk] = var[:, sti:eti]
-#                elif idx == 2:
-#                    ret[vk] = var[:, :, sti:eti]
-#                else:
-#                    ret[vk] = "Temporal index > 2, WTF"
-#            else:
-#                ret[vk] = "Non-temporal Dimension ==> ignore for now"
-#                continue
-
-        return ret
-
-    def find_time_axis(self):
-        if self.tvar is None:
-            if self.cdms_ds is None:
-                self.cdms_ds = cdms2.openDataset(self.ds_url)
-
-            taxis = self.cdms_ds.getAxis('time')
-            if taxis is not None:
-                self.tvar = self.ds.variables[taxis.id]
-            else:
-                self.tvar = None
-
-        return self.tvar
-
-    def get_signature(self, recalculate=False):
+    def get_signature(self, recalculate=False, data_sampling=BaseExternalDataHandler.DATA_SAMPLING_NONE, **kwargs):
         """
         Calculate the signature of the dataset
         """
+        if data_sampling is None:
+            data_sampling = ""
+#        data_sampling = data_sampling or ["FIRST_LAST"]
+
         if recalculate:
             self.signature = None
 
@@ -221,9 +148,31 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             for ak in var.ncattrs():
                 att = var.getncattr(ak)
                 var_atts[ak] = hashlib.sha1(str(att)).hexdigest()
+                var_sha.update(var_atts[ak])
 
-            for key in var_atts:
-                var_sha.update(var_atts[key])
+            if data_sampling is BaseExternalDataHandler.DATA_SAMPLING_FIRST_LAST:
+                slice_first = []
+                slice_last = []
+                for s in var.shape:
+                    # get the first...where outer dims == 0 and the innermost == 1
+                    slice_first.append(slice(0, 1))
+                    # get the last...where outer dims == max for dim
+                    slice_last.append(slice(s-1,s))
+
+                dat_f = var[slice_first]
+                dat_l = var[slice_last]
+
+                # add the string data arrays into the sha
+                var_sha.update(str(dat_f))
+                var_sha.update(str(dat_l))
+
+            elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_FULL:
+                pass
+            elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN:
+                shotgun_count = kwargs[BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN_COUNT] or 10
+                pass
+            else:
+                pass
 
             var_map[vk] = var_sha.hexdigest(), var_atts
 
@@ -265,11 +214,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         self.signature = sha_full.hexdigest(), ret
         return self.signature
 
-    def compare(self, dsh):
+    def compare(self, dsh, data_sampling=BaseExternalDataHandler.DATA_SAMPLING_NONE):
         assert isinstance(dsh, DapExternalDataHandler)
         
-        my_sig = self.get_signature(recalculate=True)
-        sig2 = dsh.get_signature(recalculate=True)
+        my_sig = self.get_signature(recalculate=True, data_sampling=data_sampling)
+        sig2 = dsh.get_signature(recalculate=True, data_sampling=data_sampling)
 
         dcr = DatasetComparisonResult()
 
@@ -370,34 +319,99 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return dcr
 
-#    def walk_dataset(self, top):
-#        values = top.group.values()
-#        yield values
-#        for value in values:
-#            for children in walk_dataset(value):
-#                yield children
-#
-#    def print_dataset_tree(self):
-#        if self.ds is None:
-#            return "Dataset is None"
-#
-#        print self.ds.path, self.ds
-#        for children in walk_dataset(self.ds):
-#            for child in children:
-#                print child.path, child
+    def acquire_data_old(self, request=None, **kwargs):
+        """
+        For testing only at this point.  Called from examples/eoi/test_update.py
+        """
+        td = timedelta(hours=-1)
+        edt = datetime.utcnow()
+        sdt = edt + td
 
-#    def get_dataset_size(self):
-#        return self.ds
-#        return reduce(lambda x, y: x * self.calculate_data_size(y), self.ds.keys())
+        if request is not None:
+            if "start_time" in request:
+                sdt = request.start_time
+            if "end_time" in request:
+                edt = request.end_time
+            if "lower_left_x" in request.bbox:
+                lower_left_x = request.bbox["lower_left_x"]
+            if "lower_left_y" in request.bbox:
+                lower_left_y = request.bbox["lower_left_y"]
+            if "upper_right_x" in request.bbox:
+                upper_right_x = request.bbox["upper_right_x"]
+            if "upper_right_y" in request.bbox:
+                upper_right_y = request.bbox["upper_right_y"]
 
-#    def calculate_data_size(self, variable=None):
-#        if variable is None and self.ds is not None:
-#            variable = self.ds[self.ds.keys()[0]]
-#
-#        if type(variable) == pydap.model.GridType:
-#            return reduce(lambda x, y: x * y, variable.shape) * variable.type.size
-#        else:
-#            log.warn("variable is of unhandled type: %s" % type(variable))
+        tvar = self.ds.variables[self._dataset_desc_obj.temporal_dimension]
+        tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
+        if tindices[0] == tindices[1]:
+            # add one to the end index to ensure we get everything
+            tindices[1] += 1
+
+        print ">>> tindices [start end]: %s" % tindices
+
+        dims = self.ds.dimensions.items()
+
+        ret = {}
+        #        ret["times"] = tvar[sti:eti]
+        for vk in self.ds.variables:
+            print "***"
+            print vk
+            var = self.ds.variables[vk]
+            t_idx = -1
+            lon_idx = -1
+            lat_idx = -1
+            if self._dataset_desc_obj.temporal_dimension in var.dimensions:
+                t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
+            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
+                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
+            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
+                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
+
+            lst = []
+            for i in range(len(var.dimensions)):
+                if i == t_idx:
+                    lst.append(slice(tindices[0], tindices[1]))
+                elif i == lon_idx:
+                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
+                        self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
+                elif i == lat_idx:
+                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
+                        self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
+                else:
+                    lst.append(slice(0, len(dims[i][1])))
+            print lst
+            print "==="
+            tpl = tuple(lst)
+            ret[vk] = tpl, var[tpl]
+            print ret[vk]
+            print "***"
+
+        #                if idx == 0:
+        #                    ret[vk] = var[sti:eti]
+        #                elif idx == 1:
+        #                    ret[vk] = var[:, sti:eti]
+        #                elif idx == 2:
+        #                    ret[vk] = var[:, :, sti:eti]
+        #                else:
+        #                    ret[vk] = "Temporal index > 2, WTF"
+        #            else:
+        #                ret[vk] = "Non-temporal Dimension ==> ignore for now"
+        #                continue
+
+        return ret
+
+    def find_time_axis(self):
+        if self.tvar is None:
+            if self.cdms_ds is None:
+                self.cdms_ds = cdms2.openDataset(self.ds_url)
+
+            taxis = self.cdms_ds.getAxis('time')
+            if taxis is not None:
+                self.tvar = self.ds.variables[taxis.id]
+            else:
+                self.tvar = None
+
+        return self.tvar
 
     def _pprint_signature(self):
         sig = self.get_signature()
@@ -456,6 +470,7 @@ class DatasetComparisonResult():
     mod_gatts = []
     new_varatts = []
     mod_varatts = []
+    mod_data = []
 
     def __init__(self):
         pass
@@ -483,6 +498,8 @@ class DatasetComparisonResult():
             return ("NEW_DIM", self.new_dims)
         if self.mod_dims:
             return ("MOD_DIMS", self.mod_dims)
+        if self.mod_data:
+            return ("MOD_DATA", self.mod_data)
         if self.new_varatts:
             return ("NEW_VAR_ATTS", self.new_varatts)
         if self.mod_varatts:
@@ -493,3 +510,33 @@ class DatasetComparisonResult():
             return ("MOD_GBL_ATTS", self.mod_gatts)
 
         return ("EQUAL",[])
+
+
+#    def walk_dataset(self, top):
+#        values = top.group.values()
+#        yield values
+#        for value in values:
+#            for children in walk_dataset(value):
+#                yield children
+#
+#    def print_dataset_tree(self):
+#        if self.ds is None:
+#            return "Dataset is None"
+#
+#        print self.ds.path, self.ds
+#        for children in walk_dataset(self.ds):
+#            for child in children:
+#                print child.path, child
+
+#    def get_dataset_size(self):
+#        return self.ds
+#        return reduce(lambda x, y: x * self.calculate_data_size(y), self.ds.keys())
+
+#    def calculate_data_size(self, variable=None):
+#        if variable is None and self.ds is not None:
+#            variable = self.ds[self.ds.keys()[0]]
+#
+#        if type(variable) == pydap.model.GridType:
+#            return reduce(lambda x, y: x * y, variable.shape) * variable.type.size
+#        else:
+#            log.warn("variable is of unhandled type: %s" % type(variable))

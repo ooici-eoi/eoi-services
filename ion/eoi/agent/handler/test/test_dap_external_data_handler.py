@@ -20,67 +20,64 @@ class TestDapExternalDataHandler(PyonTestCase):
         lst = ["DS1", "DS1_DUP", "DS_DIM_SIZE_CHANGED", "DS_VAR_ATT_CHANGED", "DS_GLOBAL_ATT_CHANGED"]
 
         for key in lst:
-            th,tn=self.get_temp_file()
-            ds = self.create_tst_data_set_1(th,tn, key)
+            th,tn=self.get_temp_file(prefix=(key + "_"))
+            ds = self.create_tst_data_set(th,tn,key)
             self._ds_list[key]=tn, th, ds
 
-        self._ds1_sig = ('601c1b036c9d2590bd916d5b25716bcdd5ad3209',
-                        {'dims': ('66b17e07d49eb154e5e1bcad6ed6dddf5ac55829',
-                            {'lat': 'ea22bf57c7281557e134ded98195a229668b9381',
-                            'lon': '4d6ae4cf654eea344c7f681cb3f17f63f0bdfaad',
-                            'obs': 'b66e1e67cd63f645eba5ce523e87a3ffdb7597fb'}),
-                        'gbl_atts': ('09a13128e45c6e1909c4b762bdd0d84b9736cfbe',
-                            {u'history': '70d1ff82dbc7cc7a0972f67ab75ce93a184f160f',
-                             u'creator': '3c5b4941b7b4594facec9eb943e4d3c5401d882a'}),
-                        'vars': ('150fc2d60d2b7d913888a0abff40af99933f11e3',
-                            {'latitude': ('0198dc9142964d3a9e3b68608cd83ee45d915193',
-                                {u'units': '84f9eb7a658bfac37e07152c3ea75548fee6f512',
-                                u'long_name': '648b097ed4fff175013ce05cbb03ddb97b957774',
-                                u'standard_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed'}),
-                            'pres': ('eab02b31074124866d163a09d2e93f4bd8baa418',
-                                {u'ancillary_variables': '91ddcd9068fc8760336c20c1519d22759fe5e4a9',
-                                u'coordinates': 'e213e825d010c1bb56f66488d0c17cd0f65564d3',
-                                u'long_name': '2b58cfcccad9f8fa8188906ddfdc870d39e9dabc',
-                                u'standard_name': '6581778bf3246aa22030ebd47b62edf1cf8d40d2',
-                                u'instrument_name': 'c4658becfa0addf7c4b86c870a2784a33c71fe46',
-                                u'units': 'de524ecedd736cf05f6f9f39e7ef1b9e60d5855e',
-                                u'instrument_mount': '355d21804150a22bf011508a4ff8da69e17bf60e',
-                                u'instrument_serial_number': '7b52009b64fd0a2a49e6d8a939753077792b0554'}),
-                            'longitude': ('73a46062642560b595945b52d8429a5003f204ee',
-                                {u'units': 'ff371c19d6872ff49d09490ecbdffbe3e7af2be5',
-                                u'long_name': 'fb1da283b45742604e37887bb83bfedb65e19bbc',
-                                u'standard_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0'}),
-                            'time': ('3244a9baf3e4be8d9746b660fc140287ee6122f1',
-                                {u'units': 'd779896565174fdacafb4c96fc70455a2ac7d826',
-                                u'_FillValue': '3b75a28be8e68812da8cc1a9c77f1f04dfa30815',
-                                u'standard_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
-                                u'comment': 'd4bd716c721dd666ab529575d2ccaea4f0867dd9',
-                                u'long_name': '714eea0f4c980736bde0065fe73f573487f08e3a'})})})
+        self._ds1_sig = ('644919a73b7738c8d7be01f5176e2b9276c3c2ba', {'dims': (
+        '9e86329cc35148d33f94da5d9a45c4996b8ff756',
+            {'lat': '17b0bff9fd5da05a17e27478f72d39216546eafa', 'lon': 'f115170f91587fb723e33ac1564eb021615acfaa',
+             'time': '165058f1f201a8e9e455687940ce890121dd7853'}), 'gbl_atts': (
+        '09a13128e45c6e1909c4b762bdd0d84b9736cfbe', {u'history': '70d1ff82dbc7cc7a0972f67ab75ce93a184f160f',
+                                                     u'creator': '3c5b4941b7b4594facec9eb943e4d3c5401d882a'}), 'vars': (
+        '12dd72b317a36bd6a66748bb9e9edbe8e5048b4c', {'latitude': ('d3681c3dd7d2903894e2a9bbc9e557bd000da504', {
+            u'units': '84f9eb7a658bfac37e07152c3ea75548fee6f512',
+            u'long_name': '648b097ed4fff175013ce05cbb03ddb97b957774',
+            u'standard_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed'}), 'temp': (
+        '38416f2e10419e0cf74964a1fedd511a1031b877', {u'units': '53f8a000a1f0bc4b59a178b0bcea46c9ef8ff160',
+                                                     u'long_name': 'b7d4eadd3b0618f8164c53f1c31df4acad5db392',
+                                                     u'standard_name': '8e8c717ded6a5973b95661d2f298e175c04b1624'}),
+                                                     'longitude': ('5f1b3621ec1fc8af18e798488bf3a514bca638fb', {
+                                                         u'units': 'ff371c19d6872ff49d09490ecbdffbe3e7af2be5',
+                                                         u'long_name': 'fb1da283b45742604e37887bb83bfedb65e19bbc',
+                                                         u'standard_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0'}),
+                                                     'time': ('036112bc95c35ba8ccff3ae54d77e76c881ad1af', {
+                                                         u'comment': 'd4bd716c721dd666ab529575d2ccaea4f0867dd9',
+                                                         u'_FillValue': '7984b0a0e139cabadb5afc7756d473fb34d23819',
+                                                         u'long_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
+                                                         u'standard_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
+                                                         u'units': 'd779896565174fdacafb4c96fc70455a2ac7d826',
+                                                         u'calendar': '4a78d3cb314a4e97cfe37eda5781f60b87f6145e'})})})
 
 
     def tearDown(self):
         for key in self._ds_list:
             os.remove(self._ds_list[key][0])
+#        pass
 
-    def create_tst_data_set_1(self, tmp_handle, tmp_name, key):
+    def create_tst_data_set(self, tmp_handle, tmp_name, key):
+        import numpy
         ds = Dataset(tmp_name, 'w')
-        obs = ds.createDimension('obs', None)
-        lat = ds.createDimension('lat', 73)
-        lon_len = 144
+        time = ds.createDimension('time', None)
+        lat = ds.createDimension('lat', 80)
+        lon_len = 60
         if key is "DS_DIM_SIZE_CHANGED":
-            lon_len = 150
+            lon_len = 70
         lon = ds.createDimension('lon', lon_len)
 
         ds.creator = "ocean observing initiative"
-        ds.history = "first history entry"
         if key is "DS_GLOBAL_ATT_CHANGED":
-            ds.history = ds.history + "; second history entry"
+            ds.history = "first history entry; second history entry"
+        else:
+            ds.history = "first history entry"
 
-        time = ds.createVariable('time','f8',('obs',),fill_value=-1)
+        time = ds.createVariable('time','i8',('time',),fill_value=-1)
         time.standard_name = "time"
         time.long_name = "time"
         time.units = "seconds since 1970-01-01 00:00:00"
+        time.calendar = "gregorian"
         time.comment = "estimated time of observation"
+
 
         latitudes = ds.createVariable('latitude','f4',('lat',))
         latitudes.standard_name = "latitude"
@@ -89,69 +86,39 @@ class TestDapExternalDataHandler(PyonTestCase):
         else:
             latitudes.long_name = "station latitude"
         latitudes.units = "degrees_north"
+        latitudes[:] = numpy.arange(10,50,0.5)
 
         longitudes = ds.createVariable('longitude','f4',('lon',))
         longitudes.standard_name = "longitude"
         longitudes.long_name = "station longitude"
         longitudes.units = "degrees_east"
+        if key is "DS_DIM_SIZE_CHANGED":
+            longitudes[:] = numpy.arange(-90,-55,0.5)
+        else:
+            longitudes[:] = numpy.arange(-90,-60,0.5)
 
-        pres = ds.createVariable('pres','f4',('obs',))
-        pres.standard_name = "sea_water_pressure"
-        pres.long_name = "pressure level"
-        pres.units = "dbar"
-        pres.coordinates = "time lon lat z"
-        pres.instrument_name = "SBE52MP"
-        pres.instrument_serial_number = "12"
-        pres.instrument_mount = "mounted_on_moored_profiler"
-        pres.ancillary_variables = "pres_qc"
+        temp = ds.createVariable('temp','f4',('time','lat','lon',))
+        temp.standard_name = "sea_water_temperature"
+        temp.long_name = "sea water temperature"
+        temp.units = "degrees C"
+        # write the temperature data
+        from numpy.random import uniform
+        temp[0:10,:,:] = uniform(size=(10,len(ds.dimensions["lat"]),len(ds.dimensions["lon"])))
 
-        ds.close()
-
-        os.close(tmp_handle)
-
-        return ds
-
-    def get_temp_file(self):
-        return tempfile.mkstemp(suffix='.nc')
-
-    def create_tst_data_set_2(self, tmp_handle, tmp_name):
-        ds = Dataset(tmp_name, 'w')
-        group = ds.createGroup('samplegroup')
-        obs = group.createDimension('obs', None)
-        lat = group.createDimension('lat', 73)
-        lon = group.createDimension('lon', 144)
-
-        time = group.createVariable('time','f8',('obs',),fill_value=-1)
-        time.standard_name = "time"
-        time.long_name = "time"
-        time.units = "seconds since 1970-01-01 00:00:00"
-        time.comment = "estimated time of observation"
-
-        latitudes = group.createVariable('latitude','f4',('lat',))
-        latitudes.standard_name = "latitude"
-        latitudes.long_name = "station latitude"
-        latitudes.units = "degrees_north"
-
-        longitudes = group.createVariable('longitude','f4',('lon',))
-        longitudes.standard_name = "longitude"
-        longitudes.long_name = "station longitude"
-        longitudes.units = "degrees_east"
-
-        pres = group.createVariable('pres','f4',('obs',))
-        pres.standard_name = "sea_water_pressure"
-        pres.long_name = "pressure level"
-        pres.units = "dbar"
-        pres.coordinates = "time lon lat z"
-        pres.instrument_name = "SBE52MP"
-        pres.instrument_serial_number = "12"
-        pres.instrument_mount = "mounted_on_moored_profiler"
-        pres.ancillary_variables = "pres_qc"
+        # fill in the temporal data
+        from datetime import datetime, timedelta
+        from netCDF4 import num2date, date2num
+        dates = [datetime(2011,12,1) + n * timedelta(hours=1) for n in range(temp.shape[0])]
+        time[:] = date2num(dates,units=time.units,calendar=time.calendar)
 
         ds.close()
 
         os.close(tmp_handle)
 
         return ds
+
+    def get_temp_file(self, prefix=""):
+        return tempfile.mkstemp(prefix=prefix, suffix='.nc')
 
     def create_tst_data_set_handler(self, tmp_name):
         dsrc = IonObject("DataSource", name="test")
@@ -169,8 +136,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh = self.create_tst_data_set_handler(tn)
         dsh.ds = ds
         signature = dsh.get_signature()
+        ## Uncomment this line when the guts of "get_signature" has changed to print the new "correct" value - replace "self._ds1_sig" with the output
 #        raise StandardError(signature)
-#        self.assertTrue(signature != "")
         self.assertEqual(signature, self._ds1_sig)
 
     def test_compare_identical(self):
@@ -178,12 +145,24 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_1 = self.create_tst_data_set_handler(tn_1)
         dsh_1.ds = ds_1
 
-        tn_2,th_2,ds_2 = self._ds_list["DS1_DUP"]
+        tn_2,th_2,ds_2 = self._ds_list["DS1"]
         dsh_2 = self.create_tst_data_set_handler(tn_2)
         dsh_2.ds = ds_2
         
         dcr = dsh_1.compare(dsh_2)
         self.assertTrue(dcr.get_result()[0], "EQUAL")
+
+    def test_compare_data_different(self):
+        tn_1,th_1,ds_1 = self._ds_list["DS1"]
+        dsh_1 = self.create_tst_data_set_handler(tn_1)
+        dsh_1.ds = ds_1
+
+        tn_2,th_2,ds_2 = self._ds_list["DS1_DUP"]
+        dsh_2 = self.create_tst_data_set_handler(tn_2)
+        dsh_2.ds = ds_2
+
+        dcr = dsh_1.compare(dsh_2, data_sampling=DapExternalDataHandler.DATA_SAMPLING_FIRST_LAST)
+        self.assertTrue(dcr.get_result()[0], "MOD_DATA")
     
     def test_compare_global_attribute_changed(self):
         tn_1,th_1,ds_1 = self._ds_list["DS1"]
