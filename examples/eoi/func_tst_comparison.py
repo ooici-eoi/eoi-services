@@ -5,7 +5,7 @@ __author__ = 'cmueller'
 from pyon.public import log
 from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
 import sys
-from examples.eoi.test_base import *
+from examples.eoi.func_tst_base import *
 
 if __name__ == '__main__':
 
@@ -33,6 +33,6 @@ if __name__ == '__main__':
     dsh2=DapExternalDataHandler(ret2[EXTERNAL_DATA_PROVIDER], ret2[DATA_SOURCE], ret2[EXTERNAL_DATA_SET], ret2[DAP_DS_DESC])
 
     print "\nCompare COMP1 & COMP1"
-    dsh1.compare(dsh1b)
+    dsh1.compare(dsh1b.get_signature())
     print "\nCompare COMP1 & COMP2"
-    dsh1.compare(dsh2)
+    dsh1.compare(dsh2.get_signature())

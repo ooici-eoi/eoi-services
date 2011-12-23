@@ -1,7 +1,7 @@
 <!-- Ant build file for pyon -->
-<project name="pyon" default="info" basedir=".">
+<project name="eoi-services" default="info" basedir=".">
     <description>
-        This is the ANT build file for the OOI COI Services module.
+        This is the ANT build file for the OOI EOI Services module.
         This module is set up to start the pyon CC and parts of the ION system from.
     </description>
 
@@ -23,7 +23,7 @@
     <property name="bin" location="bin"/>
 
     <target name="info">
-        <echo message="Repository for COI-services as part of the ION system."/>
+        <echo message="Repository for eoi-services as part of the ION system."/>
         <echo message="This repository is enabled to launch the ION system and containers from."/>
         <echo message="Run 'ant -p' to retrieve a list of targets."/>
     </target>

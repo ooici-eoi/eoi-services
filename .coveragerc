@@ -1,7 +1,6 @@
 [run]
 source =
     ion
-    examples
 omit =
     */test/*
 
