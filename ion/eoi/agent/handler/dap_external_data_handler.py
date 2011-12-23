@@ -18,22 +18,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     ds = None
     cdms_ds = None
     tvar = None
-    signature = None
+    _signature = None
     buffer_size = 10000
 
     def __init__(self, data_provider=None, data_source=None, ext_dataset=None, dataset_desc=None, update_desc=None, *args, **kwargs):
         BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, dataset_desc, update_desc, *args, **kwargs)
-
-#        # Pop the "DS_DESC"
-#        if "DS_DESC" in kwargs:
-#            self._dap_ds_desc = kwargs.pop("DS_DESC")
-#            print self._dap_ds_desc
-#
-#        if "UPDATE_DESC" in kwargs:
-#            self._update_desc = kwargs.pop("UPDATE_DESC")
-#
-#
-#        self.base_initialize(data_provider, data_source, ext_dataset, *args, **kwargs)
 
         if self._dataset_desc_obj is not None:
             base_url=""
@@ -79,6 +68,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             dims = var.dimensions
             attrs = self.get_attributes(scope=name)
         else:
+#            print "====> HERE WE ARE"
+            #TODO:  Not really sure what the heck this is doing...seems to be making up data??
             for var in self.ds.variables:
                 var = self.ds.variables[var]
                 if name in var.dimensions:
@@ -88,8 +79,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             typecode = data.dtype.char
             dims, attrs = (name,), {}
 
-#        print "tc=%s dims=%s" % (typecode, dims)
-
         if typecode == 'S1' or typecode == 'S':
             typecode = 'S'
             data = numpy.array([''.join(row) for row in numpy.asarray(data)])
@@ -98,34 +87,36 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         return name, data, typecode, dims, attrs
 
     def has_new_data(self, **kwargs):
-        repo_sig = None
-        # TODO: Get the "last" signature for this dataset from the repository (from the "UpdateDescription" object)
-
-        if repo_sig is None:
+        if self._update_desc_obj is None:
             return True
 
-        # compare the repo_signature to the current dataset signature
-        dcr = self.compare(data_sampling=BaseExternalDataHandler.DATA_SAMPLING_FIRST_LAST)
+        last_signature = self._update_desc_obj.last_signature
+
+        if last_signature == "":
+            return True
+
+        # compare the last_signature to the current dataset _signature
+        dcr = self.compare(last_signature)
         dcr_result = dcr.get_result()
+        if dcr_result[0] in [dcr.EQUAL, dcr.MOD_GATT]:
+            return False
 
+        return True
 
-
-
-
-
-    def get_signature(self, recalculate=False, data_sampling=BaseExternalDataHandler.DATA_SAMPLING_NONE, **kwargs):
+    def get_signature(self, recalculate=False, **kwargs):
         """
-        Calculate the signature of the dataset
+        Calculate the _signature of the dataset
         """
-        if data_sampling is None:
-            data_sampling = ""
-#        data_sampling = data_sampling or ["FIRST_LAST"]
+        if self._dataset_desc_obj is None:
+            data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
+        else:
+            data_sampling = self._dataset_desc_obj.data_sampling
 
         if recalculate:
-            self.signature = None
+            self._signature = None
 
-        if self.signature is not None:
-            return self.signature
+        if self._signature is not None:
+            return self._signature
 
         ret = {}
         # sha for time values
@@ -167,6 +158,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 var_sha.update(str(dat_l))
 
             elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_FULL:
+                var_sha.update(str(var[:]))
                 pass
             elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN:
                 shotgun_count = kwargs[BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN_COUNT] or 10
@@ -211,27 +203,25 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             if ret[key] is not None:
                 sha_full.update(ret[key][0])
 
-        self.signature = sha_full.hexdigest(), ret
-        return self.signature
+        self._signature = sha_full.hexdigest(), ret
+        return self._signature
 
-    def compare(self, dsh, data_sampling=BaseExternalDataHandler.DATA_SAMPLING_NONE):
-        assert isinstance(dsh, DapExternalDataHandler)
-        
-        my_sig = self.get_signature(recalculate=True, data_sampling=data_sampling)
-        sig2 = dsh.get_signature(recalculate=True, data_sampling=data_sampling)
+    def compare(self, data_signature):
+
+        my_sig = self.get_signature()
 
         dcr = DatasetComparisonResult()
 
-        if my_sig[0] != sig2[0]:
+        if my_sig[0] != data_signature[0]:
             #TODO: make info
             print "=!> Full signatures differ"
-            if my_sig[1]["dims"][0] != sig2[1]["dims"][0]:
+            if my_sig[1]["dims"][0] != data_signature[1]["dims"][0]:
                 #TODO: make info
                 print "==!> Dimensions differ"
                 for dk in my_sig[1]["dims"][1]:
                     v1 = my_sig[1]["dims"][1][dk]
-                    if dk in sig2[1]["dims"][1]:
-                        v2 = sig2[1]["dims"][1][dk]
+                    if dk in data_signature[1]["dims"][1]:
+                        v2 = data_signature[1]["dims"][1][dk]
                     else:
                         #TODO: make info
                         print "===!> Dimension '%s' does not exist in 2nd dataset" % dk
@@ -250,13 +240,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 #TODO: make info
                 print "===> Dimensions are equal"
 
-            if my_sig[1]["gbl_atts"][0] != sig2[1]["gbl_atts"][0]:
+            if my_sig[1]["gbl_atts"][0] != data_signature[1]["gbl_atts"][0]:
                 #TODO: make info
                 print "==!> Global Attributes differ"
                 for gk in my_sig[1]["gbl_atts"][1]:
                     v1 = my_sig[1]["gbl_atts"][1][gk]
-                    if gk in sig2[1]["gbl_atts"][1]:
-                        v2 = sig2[1]["gbl_atts"][1][gk]
+                    if gk in data_signature[1]["gbl_atts"][1]:
+                        v2 = data_signature[1]["gbl_atts"][1][gk]
                     else:
                         #TODO: make info
                         print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
@@ -276,13 +266,13 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 #TODO: make info
                 print "===> Global Attributes are equal"
 
-            if my_sig[1]["vars"][0] != sig2[1]["vars"][0]:
+            if my_sig[1]["vars"][0] != data_signature[1]["vars"][0]:
                 #TODO: make info
                 print "==!> Variable attributes differ"
                 for vk in my_sig[1]["vars"][1]:
                     v1 = my_sig[1]["vars"][1][vk][0]
-                    if vk in sig2[1]["vars"][1]:
-                        v2 = sig2[1]["vars"][1][vk][0]
+                    if vk in data_signature[1]["vars"][1]:
+                        v2 = data_signature[1]["vars"][1][vk][0]
                     else:
                         #TODO: make info
                         print "===!> Variable '%s' does not exist in 2nd dataset" % vk
@@ -293,8 +283,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                         print "===!> Variable '%s' differ" % vk
                         for vak in my_sig[1]["vars"][1][vk][1]:
                             va1 = my_sig[1]["vars"][1][vk][1][vak]
-                            if vak in sig2[1]["vars"][1][vk][1]:
-                                va2 = sig2[1]["vars"][1][vk][1][vak]
+                            if vak in data_signature[1]["vars"][1][vk][1]:
+                                va2 = data_signature[1]["vars"][1][vk][1][vak]
                             else:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
@@ -321,7 +311,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
     def acquire_data_old(self, request=None, **kwargs):
         """
-        For testing only at this point.  Called from examples/eoi/test_update.py
+        For testing only at this point.  Called from examples/eoi/func_tst_update.py
         """
         td = timedelta(hours=-1)
         edt = datetime.utcnow()
@@ -464,16 +454,24 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
 class DatasetComparisonResult():
 
-    new_dims = []
-    mod_dims = []
-    new_gatts = []
-    mod_gatts = []
-    new_varatts = []
-    mod_varatts = []
-    mod_data = []
+    EQUAL = "EQUAL"
+    NEW_DIM = "NEW_DIM"
+    MOD_DIM = "MOD_DIM"
+    NEW_GATT = "NEW_GATT"
+    MOD_GATT = "MOD_GATT"
+    NEW_VARATT = "NEW_VARATT"
+    MOD_VARATT = "MOD_VARATT"
+    MOD_DATA = "MOD_DATA"
 
     def __init__(self):
-        pass
+        self.new_dims = []
+        self.mod_dims = []
+        self.new_gatts = []
+        self.mod_gatts = []
+        self.new_varatts = []
+        self.mod_varatts = []
+        self.mod_data = []
+
 
     def add_dim(self, dim_name, is_new=False):
         if is_new:
@@ -495,21 +493,21 @@ class DatasetComparisonResult():
 
     def get_result(self):
         if self.new_dims:
-            return ("NEW_DIM", self.new_dims)
-        if self.mod_dims:
-            return ("MOD_DIMS", self.mod_dims)
-        if self.mod_data:
-            return ("MOD_DATA", self.mod_data)
-        if self.new_varatts:
-            return ("NEW_VAR_ATTS", self.new_varatts)
-        if self.mod_varatts:
-            return ("MOD_VAR_ATTS", self.mod_varatts)
-        if self.new_gatts:
-            return ("NEW_GBL_ATTS", self.new_gatts)
-        if self.mod_gatts:
-            return ("MOD_GBL_ATTS", self.mod_gatts)
-
-        return ("EQUAL",[])
+            return self.NEW_DIM, self.new_dims
+        elif self.mod_dims:
+            return self.MOD_DIM, self.mod_dims
+        elif self.mod_data:
+            return self.MOD_DATA, self.mod_data
+        elif self.new_varatts:
+            return self.NEW_VARATT, self.new_varatts
+        elif self.mod_varatts:
+            return self.MOD_VARATT, self.mod_varatts
+        elif self.new_gatts:
+            return self.NEW_GATT, self.new_gatts
+        elif self.mod_gatts:
+            return self.MOD_GATT, self.mod_gatts
+        else:
+            return self.EQUAL, []
 
 
 #    def walk_dataset(self, top):

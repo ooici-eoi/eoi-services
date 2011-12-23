@@ -18,7 +18,6 @@ COMP2 = "comp2"
 COADS = "coads"
 NCOM = "ncom"
 
-
 class DataAcquisitionManagementServicePlaceholder:
 
     def get_data_handlers(self, ds_id=''):

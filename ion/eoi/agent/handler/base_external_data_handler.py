@@ -38,31 +38,10 @@ class BaseExternalDataHandler():
         self._dataset_desc_obj = ds_desc
         self._update_desc_obj = update_desc
 
-    def get_status(self, **kwargs):
-        return NotImplemented
-
-    def has_new_data(self, **kwargs):
-        return False
-
-    def acquire_data(self, request=None, **kwargs):
-        return NotImplemented
-
-    def acquire_new_data(self, **kwargs):
-        return NotImplemented
-
-    def get_signature(self, recalculate=False, data_sampling=DATA_SAMPLING_NONE, **kwargs):
-        return NotImplemented
-
-    def get_attributes(self, scope=None):
-        return NotImplemented
-
-    def compare(self, BaseExternalObservatoryHandler=None):
-        return NotImplemented
-
     # Generic, utility and helper methods
 
-    def calculate_decomposition(self, **kwargs):
-        return NotImplemented
+#    def calculate_decomposition(self, **kwargs):
+#        return NotImplemented
 
     def __repr__(self):
 #        return "on=%s off=%s" % (self.OBSERVATORY_ONLINE, self.OBSERVATORY_OFFLINE)
