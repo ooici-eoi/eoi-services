@@ -119,9 +119,21 @@ class TestDapExternalDataHandler(PyonTestCase):
 #    @unittest.skip("for now")
     def test_get_signature(self):
         dsh = self._dsh_list["DS_BASE"][0]
-        signature = dsh.get_signature()
+        ## Tests the case where the signature is force-recalculated
+        signature = dsh.get_signature(recalculate=True)
         ## Uncomment this line when the guts of "get_signature" has changed to print the new "correct" value - replace "self._ds_base_sig" with the output
 #        raise StandardError(signature)
+        self.assertEqual(signature, self._ds_base_sig)
+
+        ## Tests the case where the signature has already been calculated
+        signature = dsh.get_signature()
+
+        dsh._dataset_desc_obj.data_sampling = None
+        signature = dsh.get_signature(recalculate=True)
+        self.assertEqual(signature, self._ds_base_sig)
+
+        dsh._dataset_desc_obj.data_sampling = ""
+        signature = dsh.get_signature(recalculate=True)
         self.assertEqual(signature, self._ds_base_sig)
 
 #    @unittest.skip("for now")
@@ -233,6 +245,23 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_1._update_desc_obj = upd_desc
 
         self.assertTrue(dsh_1.has_new_data())
+
+    def test_has_new_data_initial(self):
+        dsh_1 = self._dsh_list["DS_BASE"][0]
+
+        self.assertTrue(dsh_1.has_new_data())
+
+        upd_desc = IonObject("UpdateDescription", name="test")
+        upd_desc.last_signature = ""
+
+        dsh_1._update_desc_obj = upd_desc
+
+        self.assertTrue(dsh_1.has_new_data())
+
+        dsh_1._update_desc_obj.last_signature = None
+
+        self.assertTrue(dsh_1.has_new_data())
+
 
 #    @unittest.skip("for now")
     def test_acquire_data_multidim(self):

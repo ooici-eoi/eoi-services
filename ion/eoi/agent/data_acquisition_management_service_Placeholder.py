@@ -55,7 +55,10 @@ class DataAcquisitionManagementServicePlaceholder:
             dprov["institution_id"] = "848"
             dprov["contact_email"] = "support@gmss.com"
 
-        return IonObject(RT.ExternalDataProvider, dprov)
+        if dprov:
+            return IonObject(RT.ExternalDataProvider, dprov)
+        else:
+            return None
 
     def read_external_data_provider(self, ds_id=''):
         # Return Value
@@ -113,7 +116,10 @@ class DataAcquisitionManagementServicePlaceholder:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = ""
 
-        return IonObject(RT.DataSource, dsrc)
+        if dsrc:
+            return IonObject(RT.DataSource, dsrc)
+        else:
+            return None
 
     def read_data_source(self, ds_id=''):
         # Return Value
@@ -142,7 +148,10 @@ class DataAcquisitionManagementServicePlaceholder:
             dset["contact_name"] = "Pierre Flament"
             dset["contact_email"] = "pflament@hawaii.edu"
 
-        return IonObject(RT.ExternalDataset, dset)
+        if dset:
+            return IonObject(RT.ExternalDataset, dset)
+        else:
+            return None
 
     def read_external_data_set(self, ds_id=''):
         # Return Value
@@ -219,7 +228,11 @@ class DataAcquisitionManagementServicePlaceholder:
             dsdesc["zonal_dimension"] = "lon"
             dsdesc["meridional_dimension"] = "lat"
 
-        return IonObject("DapDatasetDescription", dsdesc)
+        if dsdesc:
+            return IonObject("DapDatasetDescription", dsdesc)
+        else:
+            return None
+
 
     def read_dap_ds_desc(self, ds_id=''):
         # Return Value

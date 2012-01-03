@@ -31,7 +31,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             self.ds_url = base_url + self._dataset_desc_obj.dataset_path
 #            print self.ds_url
         else:
-            raise Exception("Cannot construct dataset url")
+            raise Exception("Invalid DatasetHandler: *DatasetDescriptionObject cannot be 'None'")
 
         self.ds = Dataset(self.ds_url)
 #       self.ds = open_url(self.ds_url)
@@ -92,7 +92,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         last_signature = self._update_desc_obj.last_signature
 
-        if last_signature == "":
+        if last_signature is None or last_signature == "":
             return True
 
         # compare the last_signature to the current dataset _signature
@@ -107,7 +107,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         """
         Calculate the _signature of the dataset
         """
-        if self._dataset_desc_obj is None:
+        if self._dataset_desc_obj.data_sampling is None or self._dataset_desc_obj.data_sampling == "":
             data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
         else:
             data_sampling = self._dataset_desc_obj.data_sampling
