@@ -46,3 +46,29 @@ class BaseExternalDataHandler():
     def __repr__(self):
 #        return "on=%s off=%s" % (self.OBSERVATORY_ONLINE, self.OBSERVATORY_OFFLINE)
         return "\n>> ExternalDataProvider:\n%s\n>> DataSource:\n%s\n>>ExternalDataset\n%s" % (self._ext_provider_res, self._ext_data_source_res, self._ext_dataset_res)
+
+class ExternalDataHandlerError(Exception):
+    """
+    Base class for ExternalDataHandler errors.
+    """
+    pass
+
+class InstantiationError(ExternalDataHandlerError):
+    """
+    Exception raised when an ExternalDataHandler cannot be instantiated
+    @param msg explanation of the error
+    @param expr input expression in which the error occurred
+    """
+    def __init__(self, msg, expr=None):
+        self.msg = msg
+        self.expr = expr
+
+class DataAcquisitionError(ExternalDataHandlerError):
+    """
+    Exception raised when there is a problem acquiring data from an external dataset.
+    @param msg explanation of the error
+    @param expr input expression in which the error occurred
+    """
+    def __init__(self, msg, expr=None):
+        self.msg = msg
+        self.expr = expr

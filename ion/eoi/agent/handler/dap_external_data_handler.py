@@ -3,7 +3,7 @@
 __author__ = 'cmueller'
 
 from pyon.public import log
-from ion.eoi.agent.handler.base_external_data_handler import BaseExternalDataHandler
+from ion.eoi.agent.handler.base_external_data_handler import *
 from netCDF4 import Dataset, date2index
 from datetime import datetime, timedelta
 import cdms2
@@ -29,12 +29,10 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             if self._ext_data_source_res is not None:
                 base_url = self._ext_data_source_res.base_data_url
             self.ds_url = base_url + self._dataset_desc_obj.dataset_path
-#            print self.ds_url
         else:
-            raise Exception("Invalid DatasetHandler: *DatasetDescriptionObject cannot be 'None'")
+            raise InstantiationError("Invalid DatasetHandler: *DatasetDescriptionObject cannot be 'None'")
 
         self.ds = Dataset(self.ds_url)
-#       self.ds = open_url(self.ds_url)
 
     def get_attributes(self, scope=None):
         """
@@ -70,11 +68,15 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         else:
 #            print "====> HERE WE ARE"
             #TODO:  Not really sure what the heck this is doing...seems to be making up data??
+            size = None
             for var in self.ds.variables:
                 var = self.ds.variables[var]
                 if name in var.dimensions:
                     size = var.shape[list(var.dimensions).index(name)]
                     break
+            if size is None:
+                raise DataAcquisitionError("The name '%s' does not appear to be available in the dataset, cannot acquire data" % name)
+
             data = numpy.arange(size)[slice_]
             typecode = data.dtype.char
             dims, attrs = (name,), {}

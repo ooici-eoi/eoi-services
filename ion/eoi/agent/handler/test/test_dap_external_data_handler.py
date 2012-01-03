@@ -5,8 +5,9 @@ import tempfile
 import os
 from netCDF4 import Dataset
 from nose.plugins.attrib import attr
-from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler, DatasetComparisonResult
-from pyon.util.unit_test import pop_last_call, PyonTestCase
+from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
+from ion.eoi.agent.handler.base_external_data_handler import DataAcquisitionError, InstantiationError
+from pyon.util.unit_test import PyonTestCase
 from pyon.core.bootstrap import IonObject
 import unittest
 
@@ -216,7 +217,7 @@ class TestDapExternalDataHandler(PyonTestCase):
 
 #    @unittest.skip("for now")
     def test_constructor_exception(self):
-        self.assertRaises(Exception, DapExternalDataHandler, dataset_desc=None)
+        self.assertRaises(InstantiationError, DapExternalDataHandler, dataset_desc=None)
 
 #    @unittest.skip("for now")
     def test_base_handler_repr(self):
@@ -317,15 +318,13 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertTrue(numpy.array_equiv(arr, numpy.arange(0,10)))
 
 
-    @unittest.skip("acquire_data should throw an exception in this case")
+#    @unittest.skip("acquire_data should throw an exception in this case")
     def test_acquire_data_with_no_dim_or_var(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         req = IonObject("PydapVarDataRequest", name="no_var_or_dim_with_this_name", slice=(slice(0,10)))
 
-        name, data, typecode, dims, attrs = dsh_1.acquire_data(request=req)
-        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
-
+        self.assertRaises(DataAcquisitionError, dsh_1.acquire_data, request=req)
 
 
 if __name__ == '__main__':
