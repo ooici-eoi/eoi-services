@@ -26,7 +26,6 @@ class IExternalDataHandlerController(Interface):
         """
 
         ## This is not in the correct place - there is no reason for the DataHandler to have any knowledge of the catalog for a given data provider/source
-
     #    def get_catalog(**kwargs):
     #        """
     #        Returns a catalog of assets from the External Observatory
@@ -40,18 +39,29 @@ class IExternalDataHandlerController(Interface):
         @retval A boolean indicating if there is new data available from the External Observatory
         """
 
-    def acquire_data(request=None, **kwargs):
+    def acquire_data(var_name=None, slice_=(), **kwargs):
         """
         Acquires data based on the information in the request parameter.  The exact form of the request object is left up to the concrete implementation of the specific DataHandler
+        @param var_name (optional) specifies the name of the variable for which to retrieve data; if empty, all variables returned
+        @param slice_ (optional) a tuple of slice objects that indicate how to subset the ordered dimensions; if empty, no subsetting performed
 
-        @retval <as defined by the Scientific Data Library Interface>
+        @retval a generator object that returns a tuple of objects on each iteration (objects TBD)
         """
 
     def acquire_new_data(**kwargs):
         """
-        Acquires all new data from the source.  This method does not facilitate "subset" acquisition, it retrieves all data that is not contained in the internal representation of the dataset
+        Acquires all new data from the source.
 
-        @retval <as defined by the Scientific Data Library Interface>
+        @retval a generator object that returns a tuple of objects on each iteration (objects TBD)
+        """
+    def acquire_data_by_request(request=None, **kwargs):
+        """
+        Acquires all data based on the information in the request param.
+        The request param should contain an object specific to the ExternalDataHandler implementation
+
+        @param request an object containing request information specific to the ExternalDataHandler implementation
+
+        @retval a generator object that returns a tuple of objects on each iteration (objects TBD)
         """
 
     def get_attributes(scope=None):

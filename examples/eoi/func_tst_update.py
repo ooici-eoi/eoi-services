@@ -25,5 +25,6 @@ if __name__ == '__main__':
 
     print req_obj
 
-    resp = dsh.acquire_data_old(req_obj)
+    print "Commented out dsh.acquire_data_old --> this func_tst superseded by unit/int tests"
+#    resp = dsh.acquire_data_old(req_obj)
 #    print resp

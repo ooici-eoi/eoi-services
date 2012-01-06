@@ -339,87 +339,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return dcr
 
-    def acquire_data_old(self, request=None, **kwargs):
-        """
-        For testing only at this point.  Called from examples/eoi/func_tst_update.py
-        """
-        td = timedelta(hours=-1)
-        edt = datetime.utcnow()
-        sdt = edt + td
-
-        if request is not None:
-            if "start_time" in request:
-                sdt = request.start_time
-            if "end_time" in request:
-                edt = request.end_time
-            if "lower_left_x" in request.bbox:
-                lower_left_x = request.bbox["lower_left_x"]
-            if "lower_left_y" in request.bbox:
-                lower_left_y = request.bbox["lower_left_y"]
-            if "upper_right_x" in request.bbox:
-                upper_right_x = request.bbox["upper_right_x"]
-            if "upper_right_y" in request.bbox:
-                upper_right_y = request.bbox["upper_right_y"]
-
-        tvar = self._ds.variables[self._dataset_desc_obj.temporal_dimension]
-        tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
-        if tindices[0] == tindices[1]:
-            # add one to the end index to ensure we get everything
-            tindices[1] += 1
-
-        print ">>> tindices [start end]: %s" % tindices
-
-        dims = self._ds.dimensions.items()
-
-        ret = {}
-        #        ret["times"] = _tvar[sti:eti]
-        for vk in self._ds.variables:
-            print "***"
-            print vk
-            var = self._ds.variables[vk]
-            t_idx = -1
-            lon_idx = -1
-            lat_idx = -1
-            if self._dataset_desc_obj.temporal_dimension in var.dimensions:
-                t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
-            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
-                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
-            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
-                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
-
-            lst = []
-            for i in range(len(var.dimensions)):
-                if i == t_idx:
-                    lst.append(slice(tindices[0], tindices[1]))
-                elif i == lon_idx:
-                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
-                        self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
-                elif i == lat_idx:
-                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
-                        self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
-                else:
-                    lst.append(slice(0, len(dims[i][1])))
-            print lst
-            print "==="
-            tpl = tuple(lst)
-            ret[vk] = tpl, var[tpl]
-            print ret[vk]
-            print "***"
-
-        #                if idx == 0:
-        #                    ret[vk] = var[sti:eti]
-        #                elif idx == 1:
-        #                    ret[vk] = var[:, sti:eti]
-        #                elif idx == 2:
-        #                    ret[vk] = var[:, :, sti:eti]
-        #                else:
-        #                    ret[vk] = "Temporal index > 2, WTF"
-        #            else:
-        #                ret[vk] = "Non-temporal Dimension ==> ignore for now"
-        #                continue
-
-        return ret
-
     def find_time_axis(self):
         if self._tvar is None:
             tdim = self._dataset_desc_obj.temporal_dimension
@@ -494,6 +413,86 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self._ds.keys())
         return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self._ds, str(self.find_time_axis()), self._pprint_signature())
 
+#    def acquire_data_old(self, request=None, **kwargs):
+#        """
+#        For testing only at this point.  Called from examples/eoi/func_tst_update.py
+#        """
+#        td = timedelta(hours=-1)
+#        edt = datetime.utcnow()
+#        sdt = edt + td
+#
+#        if request is not None:
+#            if "start_time" in request:
+#                sdt = request.start_time
+#            if "end_time" in request:
+#                edt = request.end_time
+#            if "lower_left_x" in request.bbox:
+#                lower_left_x = request.bbox["lower_left_x"]
+#            if "lower_left_y" in request.bbox:
+#                lower_left_y = request.bbox["lower_left_y"]
+#            if "upper_right_x" in request.bbox:
+#                upper_right_x = request.bbox["upper_right_x"]
+#            if "upper_right_y" in request.bbox:
+#                upper_right_y = request.bbox["upper_right_y"]
+#
+#        tvar = self._ds.variables[self._dataset_desc_obj.temporal_dimension]
+#        tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
+#        if tindices[0] == tindices[1]:
+#            # add one to the end index to ensure we get everything
+#            tindices[1] += 1
+#
+#        print ">>> tindices [start end]: %s" % tindices
+#
+#        dims = self._ds.dimensions.items()
+#
+#        ret = {}
+#        #        ret["times"] = _tvar[sti:eti]
+#        for vk in self._ds.variables:
+#            print "***"
+#            print vk
+#            var = self._ds.variables[vk]
+#            t_idx = -1
+#            lon_idx = -1
+#            lat_idx = -1
+#            if self._dataset_desc_obj.temporal_dimension in var.dimensions:
+#                t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
+#            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
+#                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
+#            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
+#                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
+#
+#            lst = []
+#            for i in range(len(var.dimensions)):
+#                if i == t_idx:
+#                    lst.append(slice(tindices[0], tindices[1]))
+#                elif i == lon_idx:
+#                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
+#                        self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
+#                elif i == lat_idx:
+#                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
+#                        self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
+#                else:
+#                    lst.append(slice(0, len(dims[i][1])))
+#            print lst
+#            print "==="
+#            tpl = tuple(lst)
+#            ret[vk] = tpl, var[tpl]
+#            print ret[vk]
+#            print "***"
+#
+#        #                if idx == 0:
+#        #                    ret[vk] = var[sti:eti]
+#        #                elif idx == 1:
+#        #                    ret[vk] = var[:, sti:eti]
+#        #                elif idx == 2:
+#        #                    ret[vk] = var[:, :, sti:eti]
+#        #                else:
+#        #                    ret[vk] = "Temporal index > 2, WTF"
+#        #            else:
+#        #                ret[vk] = "Non-temporal Dimension ==> ignore for now"
+#        #                continue
+#
+#        return ret
 
 class DatasetComparisonResult():
 
