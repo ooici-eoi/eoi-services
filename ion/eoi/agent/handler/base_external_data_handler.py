@@ -25,11 +25,15 @@ class BaseExternalDataHandler():
     DATA_SAMPLING_SHOTGUN_COUNT = "SHOTGUN_COUNT"
     DATA_SAMPLING_NONE = "NONE"
 
+    BLOCK_SIZE = "BLOCK_SIZE"
+
     _ext_provider_res = None
     _ext_data_source_res = None
     _ext_dataset_res = None
     _dataset_desc_obj = None
     _update_desc_obj = None
+    _signature = None
+    _block_size = 10000
 
     def __init__(self, data_provider=None, data_source=None, ext_dset=None, ds_desc=None, update_desc=None, *args, **kwargs):
         self._ext_provider_res = data_provider
@@ -37,6 +41,9 @@ class BaseExternalDataHandler():
         self._ext_dataset_res = ext_dset
         self._dataset_desc_obj = ds_desc
         self._update_desc_obj = update_desc
+
+        if "BLOCK_SIZE" in kwargs:
+            self._block_size = int(kwargs.pop("BLOCK_SIZE"))
 
     # Generic, utility and helper methods
 
@@ -56,19 +63,11 @@ class ExternalDataHandlerError(Exception):
 class InstantiationError(ExternalDataHandlerError):
     """
     Exception raised when an ExternalDataHandler cannot be instantiated
-    @param msg explanation of the error
-    @param expr input expression in which the error occurred
     """
-    def __init__(self, msg, expr=None):
-        self.msg = msg
-        self.expr = expr
+    pass
 
 class DataAcquisitionError(ExternalDataHandlerError):
     """
     Exception raised when there is a problem acquiring data from an external dataset.
-    @param msg explanation of the error
-    @param expr input expression in which the error occurred
     """
-    def __init__(self, msg, expr=None):
-        self.msg = msg
-        self.expr = expr
+    pass

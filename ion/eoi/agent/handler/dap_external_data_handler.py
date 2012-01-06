@@ -4,22 +4,19 @@ __author__ = 'cmueller'
 
 from pyon.public import log
 from ion.eoi.agent.handler.base_external_data_handler import *
+from ion.eoi.agent.utils import ArrayIterator
 from netCDF4 import Dataset, date2index
 from datetime import datetime, timedelta
 import cdms2
 import hashlib
 import numpy
-from arrayterator import Arrayterator
-
 
 class DapExternalDataHandler(BaseExternalDataHandler):
 
-    ds_url = None
-    ds = None
-    cdms_ds = None
-    tvar = None
-    _signature = None
-    buffer_size = 10000
+    _ds_url = None
+    _ds = None
+    _cdms_ds = None
+    _tvar = None
 
     def __init__(self, data_provider=None, data_source=None, ext_dataset=None, dataset_desc=None, update_desc=None, *args, **kwargs):
         BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, dataset_desc, update_desc, *args, **kwargs)
@@ -28,25 +25,56 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             base_url=""
             if self._ext_data_source_res is not None:
                 base_url = self._ext_data_source_res.base_data_url
-            self.ds_url = base_url + self._dataset_desc_obj.dataset_path
+            self._ds_url = base_url + self._dataset_desc_obj.dataset_path
         else:
             raise InstantiationError("Invalid DatasetHandler: *DatasetDescriptionObject cannot be 'None'")
 
-        self.ds = Dataset(self.ds_url)
+        self._ds = Dataset(self._ds_url)
 
     def get_attributes(self, scope=None):
         """
         Returns a dictionary containing the name/value pairs for all attributes in the given scope.
         @param scope The name of a variable in this dataset.  If no scope is provided, returns the global_attributes for the dataset
         """
-        if (scope is None) or (scope not in self.ds.variables):
-            var = self.ds
+        if (scope is None) or (scope not in self._ds.variables):
+            var = self._ds
         else:
-            var = self.ds.variables[scope]
+            var = self._ds.variables[scope]
         
         return dict((a, getattr(var, a)) for a in var.ncattrs())
 
-    def acquire_data(self, request=None, **kwargs):
+    def acquire_data(self, var_name=None, slice_=()):
+        if var_name is None:
+            vars = self._ds.variables.keys()
+        else:
+            vars = [var_name]
+
+        if not isinstance(slice_, tuple): slice_ = (slice_,)
+
+        for vn in vars:
+            var=self._ds.variables[vn]
+
+            ndims = len(var.shape)
+            # Ensure the slice_ is the appropriate length
+            if len(slice_) < ndims:
+                slice_ += (slice(None),) * (ndims-len(slice_))
+
+            arri = ArrayIterator(var, self._block_size)[slice_]
+            for d in arri:
+                rng = (d.min(), d.max())
+                yield vn, arri.curr_slice, rng, d
+
+        return
+
+    def acquire_new_data(self):
+        tvar = self.find_time_axis()
+
+        #TODO: use the last state of the data to determine what's new and build an appropriate slice_
+        slice_ = (slice(None),)
+
+        return self.acquire_data(slice_=slice_)
+
+    def acquire_data_by_request(self, request=None, **kwargs):
         """
         Returns data based on a request containing the name of a variable (request.name) and a tuple of slice objects (slice_)
         @param request An object (nominally an IonObject of type PydapVarDataRequest) with "name" and "slice" attributes where: "name" == the name of the variable; and "slice" is a tuple ('var_name, (slice_1(), ..., slice_n()))
@@ -54,12 +82,12 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         name = request.name
         slice_ = request.slice
 
-        if name in self.ds.variables:
-            var = self.ds.variables[name]
+        if name in self._ds.variables:
+            var = self._ds.variables[name]
             # Must turn off auto mask&scale - causes downstream issues if left on (default)
             var.set_auto_maskandscale(False)
             if var.shape:
-                data = Arrayterator(var, self.buffer_size)[slice_]
+                data = ArrayIterator(var, self._block_size)[slice_]
             else:
                 data = numpy.array(var.getValue())
             typecode = var.dtype.char
@@ -69,8 +97,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #            print "====> HERE WE ARE"
             #TODO:  Not really sure what the heck this is doing...seems to be making up data??
             size = None
-            for var in self.ds.variables:
-                var = self.ds.variables[var]
+            for var in self._ds.variables:
+                var = self._ds.variables[var]
                 if name in var.dimensions:
                     size = var.shape[list(var.dimensions).index(name)]
                     break
@@ -122,19 +150,19 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         ret = {}
         # sha for time values
-#        tvar=self.find_time_axis()
-#        if tvar is not None:
+#        _tvar=self.find_time_axis()
+#        if _tvar is not None:
 #            sha_time=hashlib.sha1()
-#            sha_time.update(str(tvar[:]))
+#            sha_time.update(str(_tvar[:]))
 #            ret['times']=sha_time.hexdigest()
 #        else:
 #            ret['times']=None
 
         # sha for variables
         var_map = {}
-        for vk in self.ds.variables:
-        #        sha_vars.update(str(self.ds))
-            var = self.ds.variables[vk]
+        for vk in self._ds.variables:
+        #        sha_vars.update(str(self._ds))
+            var = self._ds.variables[vk]
             #            sha_vars.update(str(var)) # includes the "current size"
             var_sha = hashlib.sha1()
             var_atts = {}
@@ -178,8 +206,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         # sha for dimensions
         dim_map = {}
-        for dk in self.ds.dimensions:
-            dim = self.ds.dimensions[dk]
+        for dk in self._ds.dimensions:
+            dim = self._ds.dimensions[dk]
             dim_map[dk] = hashlib.sha1(str(dim)).hexdigest()
 
         sha_dim = hashlib.sha1()
@@ -190,8 +218,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         # sha for globals
         gbl_map = {}
-        for gk in self.ds.ncattrs():
-            gbl = self.ds.getncattr(gk)
+        for gk in self._ds.ncattrs():
+            gbl = self._ds.getncattr(gk)
             gbl_map[gk] = hashlib.sha1(str(gbl)).hexdigest()
 
         sha_gbl = hashlib.sha1()
@@ -333,7 +361,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             if "upper_right_y" in request.bbox:
                 upper_right_y = request.bbox["upper_right_y"]
 
-        tvar = self.ds.variables[self._dataset_desc_obj.temporal_dimension]
+        tvar = self._ds.variables[self._dataset_desc_obj.temporal_dimension]
         tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
         if tindices[0] == tindices[1]:
             # add one to the end index to ensure we get everything
@@ -341,14 +369,14 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         print ">>> tindices [start end]: %s" % tindices
 
-        dims = self.ds.dimensions.items()
+        dims = self._ds.dimensions.items()
 
         ret = {}
-        #        ret["times"] = tvar[sti:eti]
-        for vk in self.ds.variables:
+        #        ret["times"] = _tvar[sti:eti]
+        for vk in self._ds.variables:
             print "***"
             print vk
-            var = self.ds.variables[vk]
+            var = self._ds.variables[vk]
             t_idx = -1
             lon_idx = -1
             lat_idx = -1
@@ -393,17 +421,30 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         return ret
 
     def find_time_axis(self):
-        if self.tvar is None:
-            if self.cdms_ds is None:
-                self.cdms_ds = cdms2.openDataset(self.ds_url)
-
-            taxis = self.cdms_ds.getAxis('time')
-            if taxis is not None:
-                self.tvar = self.ds.variables[taxis.id]
+        if self._tvar is None:
+            tdim = self._dataset_desc_obj.temporal_dimension
+            if tdim in self._ds.dimensions:
+                if tdim in self._ds.variables:
+                    self._tvar = self._ds.variables[tdim]
+                else:
+                    # find the first variable that has the tdim as the outer dimension
+                    for vk in self._ds.variables:
+                        var = self._ds.variables[vk]
+                        if tdim in var.dimensions and var.dimensions.index(tdim) == 0:
+                            self._tvar = var
+                            break
             else:
-                self.tvar = None
+                # try to figure out which is the time axis based on standard attributes
+                if self._cdms_ds is None:
+                    self._cdms_ds = cdms2.openDataset(self._ds_url)
 
-        return self.tvar
+                taxis = self._cdms_ds.getAxis('time')
+                if taxis is not None:
+                    self._tvar = self._ds.variables[taxis.id]
+                else:
+                    self._tvar = None
+
+        return self._tvar
 
     def _pprint_signature(self):
         sig = self.get_signature()
@@ -450,8 +491,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         return "".join(str_lst)
 
     def __repr__(self):
-#        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self.ds.keys())
-        return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self.ds, str(self.find_time_axis()), self._pprint_signature())
+#        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self._ds.keys())
+        return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self._ds, str(self.find_time_axis()), self._pprint_signature())
 
 
 class DatasetComparisonResult():
@@ -520,21 +561,21 @@ class DatasetComparisonResult():
 #                yield children
 #
 #    def print_dataset_tree(self):
-#        if self.ds is None:
+#        if self._ds is None:
 #            return "Dataset is None"
 #
-#        print self.ds.path, self.ds
-#        for children in walk_dataset(self.ds):
+#        print self._ds.path, self._ds
+#        for children in walk_dataset(self._ds):
 #            for child in children:
 #                print child.path, child
 
 #    def get_dataset_size(self):
-#        return self.ds
-#        return reduce(lambda x, y: x * self.calculate_data_size(y), self.ds.keys())
+#        return self._ds
+#        return reduce(lambda x, y: x * self.calculate_data_size(y), self._ds.keys())
 
 #    def calculate_data_size(self, variable=None):
-#        if variable is None and self.ds is not None:
-#            variable = self.ds[self.ds.keys()[0]]
+#        if variable is None and self._ds is not None:
+#            variable = self._ds[self._ds.keys()[0]]
 #
 #        if type(variable) == pydap.model.GridType:
 #            return reduce(lambda x, y: x * y, variable.shape) * variable.type.size
