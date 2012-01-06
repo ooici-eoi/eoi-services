@@ -21,7 +21,7 @@ def get_dataset(x):
     damsP = DataAcquisitionManagementServicePlaceholder()
     dprov = damsP.create_external_data_provider(ds_id=x)
     dsrc = damsP.create_data_source(ds_id=x)
-    dset = damsP.create_external_data_set(ds_id=x)
+    dset = damsP.create_external_dataset(ds_id=x)
     dsdesc = damsP.create_dap_ds_desc(ds_id=x)
 
     if dsrc is None or dsdesc is None:

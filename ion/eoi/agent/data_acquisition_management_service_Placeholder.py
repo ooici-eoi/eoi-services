@@ -20,11 +20,11 @@ NCOM = "ncom"
 
 class DataAcquisitionManagementServicePlaceholder:
 
-    def get_data_handlers(self, ds_id=''):
-        external_data_provider = self.create_external_data_provider(ds_id)
-        data_source = self.create_data_source(ds_id)
-        external_data_set = self.create_external_data_set(ds_id)
-        dap_ds_desc = self.create_dap_ds_desc(ds_id)
+    def get_data_handler(self, ds_id=''):
+        external_data_provider = self.read_external_data_provider(ds_id)
+        data_source = self.read_data_source(ds_id)
+        external_data_set = self.read_external_dataset(ds_id)
+        dap_ds_desc = self.read_dap_ds_desc(ds_id)
 
         protocol_type = data_source.protocol_type
         if protocol_type == "DAP":
@@ -37,35 +37,37 @@ class DataAcquisitionManagementServicePlaceholder:
 
         return dsh
 
-    def create_external_data_provider(self, ds_id=''):
+    def create_external_data_provider(self, external_data_provider=None):
+        # Return Value
+        # ------------
+        # {success: true}
+        #
+        pass
+
+    def read_external_data_provider(self, ds_id=''):
         dprov = {}
         if ds_id == HFR or ds_id == HFR_LOCAL:
-            dprov["institution_name"] = "HFRNET UCSD"
-            dprov["institution_id"] = "342"
+            inst = IonObject("Institution", name="HFRNET UCSD")
+            dprov["institution"] = inst
         elif ds_id == KOKAGG:
-            dprov["institution_name"] = "University of Hawaii"
-            dprov["institution_id"] = "128"
+            inst = IonObject("Institution", name="University of Hawaii")
+            dprov["institution"] = inst
         elif ds_id == AST2:
-            dprov["institution_name"] = "OOI CGSN"
-            dprov["institution_id"] = "5"
-            dprov["contact_name"] = "Robert Weller"
-            dprov["contact_email"] = "rweller@whoi.edu"
+            inst = IonObject("Institution", name="OOI CGSN")
+            contact = IonObject(RT.ContactInformation, name="Robert Weller")
+            contact.email = "rweller@whoi.edu"
+            dprov["institution"] = inst
+            dprov["contact"] = contact
         elif ds_id == SSTA:
-            dprov["institution_name"] = "Remote Sensing Systems"
-            dprov["institution_id"] = "848"
-            dprov["contact_email"] = "support@gmss.com"
-
+            inst = IonObject("Institution", name="Remote Sensing Systems")
+            contact = IonObject(RT.ContactInformation)
+            contact.email = "support@gmss.com"
+            dprov["institution"] = inst
+            dprov["contact"] = contact
         if dprov:
             return IonObject(RT.ExternalDataProvider, dprov)
         else:
             return None
-
-    def read_external_data_provider(self, ds_id=''):
-        # Return Value
-        # ------------
-        # ExternalDataProvider: {}
-        #
-        pass
 
     def delete_external_data_provider(self, ds_id=''):
         # Return Value
@@ -81,7 +83,14 @@ class DataAcquisitionManagementServicePlaceholder:
         #
         pass
 
-    def create_data_source(self, ds_id=''):
+    def create_data_source(self, data_source=None):
+        # Return Value
+        # ------------
+        # {success: true}
+        #
+        pass
+
+    def read_data_source(self, ds_id=''):
         dsrc = {}
         if ds_id == HFR:
             dsrc["protocol_type"] = "DAP"
@@ -95,8 +104,9 @@ class DataAcquisitionManagementServicePlaceholder:
         elif ds_id == AST2:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = "http://ooi.whoi.edu/thredds/dodsC/"
-            dsrc["contact_name"] = "Rich Signell"
-            dsrc["contact_email"] = "rsignell@usgs.gov"
+            contact = IonObject(RT.ContactInformation, name="Rich Signell")
+            contact.email = "rsignell@usgs.gov"
+            dsrc["contact"] = contact
         elif ds_id == SSTA:
             dsrc["protocol_type"] = "DAP"
             dsrc["base_data_url"] = "http://thredds1.pfeg.noaa.gov/thredds/dodsC/"
@@ -121,13 +131,6 @@ class DataAcquisitionManagementServicePlaceholder:
         else:
             return None
 
-    def read_data_source(self, ds_id=''):
-        # Return Value
-        # ------------
-        # DataSource: {}
-        #
-        pass
-
     def delete_data_source(self, ds_id=''):
         # Return Value
         # ------------
@@ -142,32 +145,33 @@ class DataAcquisitionManagementServicePlaceholder:
         #
         pass
 
-    def create_external_data_set(self, ds_id=''):
-        dset = {}
-        if ds_id == KOKAGG:
-            dset["contact_name"] = "Pierre Flament"
-            dset["contact_email"] = "pflament@hawaii.edu"
-
-        if dset:
-            return IonObject(RT.ExternalDataset, dset)
-        else:
-            return None
-
-    def read_external_data_set(self, ds_id=''):
-        # Return Value
-        # ------------
-        # ExternalDataSet: {}
-        #
-        pass
-
-    def delete_external_data_set(self, ds_id=''):
+    def create_external_dataset(self, external_data_set=None):
         # Return Value
         # ------------
         # {success: true}
         #
         pass
 
-    def update_external_data_set(self, external_data_set={}):
+    def read_external_dataset(self, ds_id=''):
+        dset = {}
+        if ds_id == KOKAGG:
+            contact = IonObject(RT.ContactInformation, name="Pierre Flament")
+            contact.email = "pflament@hawaii.edu"
+            dset["contact"] = contact
+        if dset:
+            return IonObject(RT.ExternalDataset, dset)
+        else:
+            return None
+        pass
+
+    def delete_external_dataset(self, ds_id=''):
+        # Return Value
+        # ------------
+        # {success: true}
+        #
+        pass
+
+    def update_external_dataset(self, external_data_set={}):
         # Return Value
         # ------------
         # {success: true}
@@ -175,6 +179,14 @@ class DataAcquisitionManagementServicePlaceholder:
         pass
 
     def create_dap_ds_desc(self, ds_id=''):
+        # Return Value
+        # ------------
+        # {success: true}
+        #
+        pass
+
+
+    def read_dap_ds_desc(self, ds_id=''):
         CWD = os.getcwd()
         dsdesc = {}
         if ds_id == HFR:
@@ -232,14 +244,6 @@ class DataAcquisitionManagementServicePlaceholder:
             return IonObject("DapDatasetDescription", dsdesc)
         else:
             return None
-
-
-    def read_dap_ds_desc(self, ds_id=''):
-        # Return Value
-        # ------------
-        # DapDatasetDescription: {}
-        #
-        pass
 
     def delete_dap_ds_desc(self, ds_id=''):
         # Return Value
