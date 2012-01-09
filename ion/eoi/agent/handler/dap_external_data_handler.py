@@ -18,16 +18,16 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     _cdms_ds = None
     _tvar = None
 
-    def __init__(self, data_provider=None, data_source=None, ext_dataset=None, dataset_desc=None, update_desc=None, *args, **kwargs):
-        BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, dataset_desc, update_desc, *args, **kwargs)
+    def __init__(self, data_provider=None, data_source=None, ext_dataset=None, *args, **kwargs):
+        BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, *args, **kwargs)
 
-        if self._dataset_desc_obj is not None:
+        if self._ext_dataset_res is not None:
             base_url=""
             if self._ext_data_source_res is not None:
                 base_url = self._ext_data_source_res.base_data_url
-            self._ds_url = base_url + self._dataset_desc_obj.dataset_path
+            self._ds_url = base_url + self._ext_dataset_res.dataset_description.parameters["dataset_path"]
         else:
-            raise InstantiationError("Invalid DatasetHandler: *DatasetDescriptionObject cannot be 'None'")
+            raise InstantiationError("Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
 
         self._ds = Dataset(self._ds_url)
 
@@ -117,10 +117,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         return name, data, typecode, dims, attrs
 
     def has_new_data(self, **kwargs):
-        if self._update_desc_obj is None:
-            return True
-
-        last_signature = self._update_desc_obj.last_signature
+        last_signature = self._ext_dataset_res.update_description.last_signature
 
         if last_signature is None or last_signature == "":
             return True
@@ -137,10 +134,12 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         """
         Calculate the _signature of the dataset
         """
-        if self._dataset_desc_obj.data_sampling is None or self._dataset_desc_obj.data_sampling == "":
-            data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
-        else:
-            data_sampling = self._dataset_desc_obj.data_sampling
+#        if self._dataset_desc_obj.data_sampling is None or self._dataset_desc_obj.data_sampling == "":
+#            data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
+#        else:
+#            data_sampling = self._dataset_desc_obj.data_sampling
+
+        data_sampling = self._ext_dataset_res.dataset_description.data_sampling.value
 
         if recalculate:
             self._signature = None
@@ -171,7 +170,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 var_atts[ak] = hashlib.sha1(str(att)).hexdigest()
                 var_sha.update(var_atts[ak])
 
-            if data_sampling is BaseExternalDataHandler.DATA_SAMPLING_FIRST_LAST:
+            if data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.FIRST_LAST:
                 slice_first = []
                 slice_last = []
                 for s in var.shape:
@@ -187,11 +186,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 var_sha.update(str(dat_f))
                 var_sha.update(str(dat_l))
 
-            elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_FULL:
+            elif data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.FULL:
                 var_sha.update(str(var[:]))
                 pass
-            elif data_sampling is BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN:
-                shotgun_count = kwargs[BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN_COUNT] or 10
+            elif data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.SHOTGUN:
+                shotgun_count = kwargs[self._ext_dataset_res.dataset_description.data_sampling.enum.SHOTGUN_COUNT] or 10
                 pass
             else:
                 pass
@@ -341,7 +340,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
     def find_time_axis(self):
         if self._tvar is None:
-            tdim = self._dataset_desc_obj.temporal_dimension
+            tdim = self._ext_dataset_res.dataset_description.parameters["temporal_dimension"]
             if tdim in self._ds.dimensions:
                 if tdim in self._ds.variables:
                     self._tvar = self._ds.variables[tdim]

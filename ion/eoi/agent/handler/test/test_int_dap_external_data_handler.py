@@ -2,6 +2,7 @@ __author__ = 'cmueller'
 
 from nose.plugins.attrib import attr
 from pyon.util.int_test import IonIntegrationTestCase
+from pyon.public import log
 from ion.eoi.agent.data_acquisition_management_service_Placeholder import *
 import unittest
 
@@ -24,7 +25,6 @@ class TestIntDapExternalDataHandler(IonIntegrationTestCase):
         signature = dsh.get_signature()
 
 #        raise StandardError(len(str(signature)))
-
         self.assertTrue(len(str(signature)) == 4562)
 
 
@@ -36,10 +36,7 @@ class TestIntDapExternalDataHandler(IonIntegrationTestCase):
 
         signature = dsh.get_signature()
 
-        upd_desc = IonObject("UpdateDescription")
-        upd_desc.last_signature = signature
-
-        dsh._update_desc_obj = upd_desc
+        dsh._ext_dataset_res.update_description.last_signature = signature
 
         self.assertFalse(dsh.has_new_data())
 
