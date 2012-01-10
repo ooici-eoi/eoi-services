@@ -24,7 +24,7 @@ class TestIntDapExternalDataHandler(IonIntegrationTestCase):
 
         signature = dsh.get_signature()
 
-#        raise StandardError(len(str(signature)))
+        # The signature for this particular dataset should always be 4562 characters in length (even though the values themselves will change)
         self.assertTrue(len(str(signature)) == 4562)
 
 
@@ -34,8 +34,10 @@ class TestIntDapExternalDataHandler(IonIntegrationTestCase):
         damsP = DataAcquisitionManagementServicePlaceholder()
         dsh = damsP.get_data_handler(ds_id=HFR)
 
+        # Get the signature
         signature = dsh.get_signature()
 
+        # Set the last_signature == current signature
         dsh._ext_dataset_res.update_description.last_signature = signature
 
         self.assertFalse(dsh.has_new_data())

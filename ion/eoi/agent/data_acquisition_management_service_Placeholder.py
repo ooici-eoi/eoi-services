@@ -85,17 +85,17 @@ class DataAcquisitionManagementServicePlaceholder:
         dsrc = IonObject(RT.DataSource)
         dsrc.protocol_type = "DAP"
         if ds_id == HFR:
-            dsrc.base_data_url = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
+            dsrc.connection_params["base_data_url"] = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
         elif ds_id == HFR_LOCAL:
             pass
         elif ds_id == KOKAGG:
-            dsrc.base_data_url = "http://oos.soest.hawaii.edu/thredds/dodsC/"
+            dsrc.connection_params["base_data_url"] = "http://oos.soest.hawaii.edu/thredds/dodsC/"
         elif ds_id == AST2:
-            dsrc.base_data_url = "http://ooi.whoi.edu/thredds/dodsC/"
+            dsrc.connection_params["base_data_url"] = "http://ooi.whoi.edu/thredds/dodsC/"
             dsrc.contact.name="Rich Signell"
             dsrc.contact.email = "rsignell@usgs.gov"
         elif ds_id == SSTA:
-            dsrc.base_data_url = "http://thredds1.pfeg.noaa.gov/thredds/dodsC/"
+            dsrc.connection_params["base_data_url"] = "http://thredds1.pfeg.noaa.gov/thredds/dodsC/"
         elif ds_id == GHPM:
             pass
         elif ds_id == COMP1:

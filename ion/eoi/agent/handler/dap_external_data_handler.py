@@ -23,8 +23,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         if self._ext_dataset_res is not None:
             base_url=""
-            if self._ext_data_source_res is not None:
-                base_url = self._ext_data_source_res.base_data_url
+            if self._ext_data_source_res is not None and "base_data_url" in self._ext_data_source_res.connection_params:
+                base_url = self._ext_data_source_res.connection_params["base_data_url"]
             self._ds_url = base_url + self._ext_dataset_res.dataset_description.parameters["dataset_path"]
         else:
             raise InstantiationError("Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
@@ -237,7 +237,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
     def compare(self, data_signature):
 
-        my_sig = self.get_signature()
+        my_sig = self.get_signature(recalculate=True)
 
         dcr = DatasetComparisonResult()
 

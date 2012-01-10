@@ -128,7 +128,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertTrue(type(dsh), DapExternalDataHandler)
 
         dsrc = IonObject("DataSource", name="test")
-        dsrc.base_data_url = ""
+        dsrc.connection_params["base_data_url"] = ""
 
         dsh1 = DapExternalDataHandler(data_source=dsrc, ext_dataset=ext_ds)
         self.assertTrue(type(dsh1), DapExternalDataHandler)
