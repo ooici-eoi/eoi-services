@@ -33,7 +33,6 @@ setup(  name = 'eoi-services',
         install_requires = [
         	'pyon',
             'Pydap>=3.0.1',
-            'arrayterator>=1.0.1',
             'netCDF4>=0.9.8',
             'cdat_lite>=6.0rc2',
         ],
