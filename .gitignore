@@ -40,3 +40,4 @@ cc-pid*
 
 .coverage
 coverage_results/
+numpy-log.txt
