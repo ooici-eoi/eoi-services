@@ -77,9 +77,9 @@ Python packages and environment management:
 
 ###Other OOI-CI Project Dependencies
 
-This project requires that both the pyon and eoi-services projects are installed in the same directory as the pydap-handlers-ion project (typically the "Dev/code" directory if the OOI-CI development directory structure is used).  These projects can be obtained using the following commands:
+This project requires that both the pyon and coi-services projects are installed in the same directory as the pydap-handlers-ion project (typically the "Dev/code" directory if the OOI-CI development directory structure is used).  These projects can be obtained using the following commands:
 
-    git clone git@github.com:ooici-eoi/coi-services.git
+    git clone git@github.com:ooici/coi-services.git
     git clone git@github.com:ooici/pyon.git
 
 #Source
