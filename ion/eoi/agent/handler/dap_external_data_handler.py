@@ -61,7 +61,20 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
             arri = ArrayIterator(var, self._block_size)[slice_]
             for d in arri:
-                rng = (d.min(), d.max())
+                if d.dtype.char is "S":
+                    # Obviously, we can't get the range of values for a string data type!
+                    rng = None
+                elif isinstance(d, numpy.ma.masked_array):
+                    # TODO: This is a temporary fix because numpy 'nanmin' and 'nanmax'
+                    # are currently broken for masked_arrays:
+                    # http://mail.scipy.org/pipermail/numpy-discussion/2011-July/057806.html
+                    dc=d.compressed()
+                    if dc.size == 0:
+                        rng = None
+                    else:
+                        rng = (numpy.nanmin(dc), numpy.nanmax(dc))
+                else:
+                    rng = (numpy.nanmin(d), numpy.nanmax(d))
                 yield vn, arri.curr_slice, rng, d
 
         return

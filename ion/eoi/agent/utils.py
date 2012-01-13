@@ -133,6 +133,9 @@ class ArrayIterator(object):
             self.curr_slice = slice_
             yield self.var[slice_]
 
+            # If this is a scalar variable, bail out
+            if ndims == 0: raise StopIteration
+
             # Update start position, taking care of overflow to other dimensions
             start[rundim] = stop[rundim]  # start where we stopped
             for i in range(ndims-1, 0, -1):
