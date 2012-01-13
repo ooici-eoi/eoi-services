@@ -9,10 +9,17 @@ eoi-services - Classes and services for acquiring and publishing data from exter
 ---
 
 # Description
-*TODO: some really excellent description*
+This project contains modules, utilities, and services for acquisition of data from external sources within the OOICI-ION infrastructure.  The repository is first and foremost a framework, designed to be extended with concrete implementations that facilitate data acquisition from specific data sources.  However, it also contains concrete External Data Handler implementations for the services listed below:
+
+- DAP
+- WaterOneFlow *(not yet, but very soon!)*
+
+Additional concrete implementations may be added to this repository over time.  The repository can also be used as a library to allow implementation of concrete External Data Handlers by other projects.
 
 **References**  
-*references to any architecture, design, or external pages*
+[EOI Development Page](https://confluence.oceanobservatories.org/display/CIDev/External+Observatory+Integration+Development)  
+[EOI Architecture Page](https://confluence.oceanobservatories.org/display/syseng/CIAD+EOI+External+Observatory+Integration)
+
 
 #Prerequisites
 
@@ -21,7 +28,7 @@ This assumes basic development environment setup (git, directory structure). Ple
 
 Pyon: The main dependency of this repository is the pyon Capability Container. Follow the listed
 steps to install the minimal needed dependencies to run pyon on a Mac. For more details and Linux
-install instructions, check out the pyon README: https://github.com/ooici/pyon/blob/master/README
+install instructions, check out the [pyon README](https://github.com/ooici/pyon/blob/master/README)
 
 
 
