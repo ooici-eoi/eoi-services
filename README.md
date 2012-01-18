@@ -103,6 +103,13 @@ Build the project using buildout (*don't miss the **-d** flag on the first comma
     python bootstrap.py -d
     bin/buildout
 
+#Generate Interfaces and Submodules
+
+Before unit tests will pass, the following commands must be run (*See below for further information about submodules*):
+
+    git submodule update
+    bin/generate-interfaces
+
 #Unit and Integration Tests
 The unit and integration tests for this project can be run as follows.  Note that the *-v* flag can be used to get verbose output (prints the name and result of each test that is run).  The *--with-coverage* flag can also be added to view a test coverage report.
 
@@ -117,3 +124,76 @@ The unit tests for this project only require that a rabbitmq broker be running:
 Currently, the integration tests are only "psuedo" integration tests - they do not rely on any other ION services at this point, but they do reach out to external data servers for data:
 
     bin/nosetests -a INT,group=eoi
+
+
+#Development
+
+You can develop services locally in this repository. Use this repository until subsystem
+specific repositories are available.
+
+Please follow the following steps as long as you are new:
+
+Get the latest code before you start editing, or anytime you want:
+
+    git pull
+    git submodule update  # Do NOT forget. This does not happen automatically
+
+**See below for an automated approach to git-submodules.**
+
+Once in a while, service interfaces change. Generate interfaces frequently (especially in case of error):
+
+    bin/generate-interfaces
+
+Before defining objects, services in ./obj, or defining app and deploy files in ./res, checkout the **master** branch:
+
+    cd extern/ion-definitions
+    git status              # Just to see what's going on
+    git checkout master     # To track the master branch (enables update and later push)
+    git pull origin master  # To get latest from the server
+
+***Note:** The res/ and obj/ dirs are symlinks to a subdirectory in a git submodule. Beware of the pitfalls
+of git submodule. You need to treat it as a separate GIT module. In case of changes, both GIT modules
+must be pushed, submodule first:*
+
+    cd extern/ion-definitions
+    git status            # Just to see what's going on
+    git commit -am "Something smart"
+    git push origin master
+    cd ../..              # To the root of coi-services
+    git commit -am "Something smarter"
+    git push
+
+Put your services in ion/services/<subsystem>/... (subdirectories are allowed).
+
+
+#Git Submodule Hooks
+
+A git hook is a script that executes during various points of using git. Some simple hooks have been written
+to help automate dealing with submodules for most people. See the steps here:
+http://blog.chaitanyagupta.com/2009/08/couple-of-hooks-to-make-life-easy-with.html
+
+They do require an initial setup. Simple instructions:
+
+Clone this repository:
+
+    cd /some/tmp/directory
+    git clone https://github.com/chaitanyagupta/gitutils.git
+
+Use the provided install script:
+
+    sh gitutils/submodule-hooks/install.sh /path/to/your/pyon/or/coi-services/dir
+
+
+The install script does the following (you can also do it manually):
+
+    cd /your/pyon/.git/hooks
+    cp /your/tmp/gitutils/submodule-hooks/pre-commit pre-commit
+    cp /your/tmp/gitutils/submodule-hooks/post-merge-commit post-merge
+    ln -s post-merge post-checkout
+    chmod +x post-merge post-checkout pre-commit
+
+Now, when checking out a branch, pulling, merging etc, git will prompt you to automatically update
+if it notices a change to the commit that your supermodule points to.
+
+The pre-commit script is so you don't forget to push changes to the submodule **BEFORE** you push changes
+to the supermodule.
