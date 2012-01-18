@@ -158,6 +158,11 @@ class TestDapExternalDataHandler(PyonTestCase):
         lon_len = 60
         if key is "DS_DIM_SIZE_CHANGED":
             lon_len = 70
+
+        time_len = 10
+        if key is "DS_ADDITIONAL_TIMES":
+            time_len = 12
+
         lon = ds.createDimension('lon', lon_len)
 
         ds.creator = "ocean observing initiative"
@@ -201,51 +206,35 @@ class TestDapExternalDataHandler(PyonTestCase):
         byte_data.standard_name = "bytes"
         byte_data.long_name = "byte_data"
         byte_data.units = "byte"
-        # write the salinity data
-        if key is "DS_ADDITIONAL_TIMES":
-            byte_data[0:12, :, :] = randint(255, size=(12, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
-        else:
-            byte_data[0:10, :, :] = randint(255, size=(10, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+
+        array_data = numpy.array(numpy.arange(0, time_len * len(ds.dimensions["lat"]) * len(ds.dimensions["lon"])))
+        byte_data[0:time_len, :, :] = numpy.reshape(array_data, (time_len, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
 
         short_data = ds.createVariable('shortdata', 'i2', ('time', 'lat', 'lon',))
         short_data.standard_name = "shorts"
         short_data.long_name = "short_data"
         short_data.units = "short"
-        # write the salinity data
-        if key is "DS_ADDITIONAL_TIMES":
-            short_data[0:12, :, :] = randint(32767, size=(12, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
-        else:
-            short_data[0:10, :, :] = randint(32767, size=(10, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+        short_data[0:time_len, :, :] = numpy.reshape(array_data, (time_len, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
 
         int_data = ds.createVariable('intdata', 'i4', ('time', 'lat', 'lon',))
         int_data.standard_name = "integers"
         int_data.long_name = "integer_data"
         int_data.units = "int"
-        # write the salinity data
-        if key is "DS_ADDITIONAL_TIMES":
-            int_data[0:12, :, :] = randint(2147483647, size=(12, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
-        else:
-            int_data[0:10, :, :] = randint(2147483647, size=(10, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+        int_data[0:time_len, :, :] = numpy.reshape(array_data, (time_len, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+
+        array_data = numpy.linspace(start=0, stop=10000, num=time_len * len(ds.dimensions["lat"]) * len(ds.dimensions["lon"]))
 
         float_data = ds.createVariable('floatdata', 'f4', ('time', 'lat', 'lon',))
         float_data.standard_name = "floats"
         float_data.long_name = "float_data"
         float_data.units = "flt"
-        # write the float data
-        if key is "DS_ADDITIONAL_TIMES":
-            float_data[0:12, :, :] = uniform(size=(12, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
-        else:
-            float_data[0:10, :, :] = uniform(size=(10, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+        float_data[0:time_len, :, :] = numpy.reshape(array_data, (time_len, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
 
         double_data = ds.createVariable('doubledata', 'f8', ('time', 'lat', 'lon',))
         double_data.standard_name = "doubles"
         double_data.long_name = "double_data"
         double_data.units = "dbl"
-        # write the float data
-        if key is "DS_ADDITIONAL_TIMES":
-            double_data[0:12, :, :] = uniform(size=(12, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
-        else:
-            double_data[0:10, :, :] = uniform(size=(10, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
+        double_data[0:time_len, :, :] = numpy.reshape(array_data, (time_len, len(ds.dimensions["lat"]), len(ds.dimensions["lon"])))
 
         # fill in the temporal data
         from datetime import datetime, timedelta
@@ -321,13 +310,21 @@ class TestDapExternalDataHandler(PyonTestCase):
 #        self.assertEqual(signature, self._ds_base_sig)
 
 #    @unittest.skip("")
-    def test_compare_identical(self):
+    def test_compare_equal_no_data(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
 
         dcr = dsh_1.compare(dsh_2.get_signature())
         self.assertTrue(dcr.get_result()[0], "EQUAL")
+
+    @unittest.skip("Nothing to test yet")
+    def test_compare_data_equal_first_last(self):
+        pass
+
+    @unittest.skip("Nothing to test yet")
+    def test_compare_data_equal_full(self):
+        pass
 
 #    @unittest.skip("")
     def test_compare_data_different_first_last(self):
@@ -454,8 +451,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertEqual(attrs, {u'units': u'flt', u'long_name': u'float_data', u'standard_name': u'floats'})
         import numpy
         arr = numpy.asarray(data).flat.copy()
-        lt_1 = arr < 1
-        gt_0 = arr > 0
+        lt_1 = arr <= 10000
+        gt_0 = arr >= 0
         self.assertTrue(lt_1.min(), lt_1.max())
         self.assertTrue(gt_0.min(), gt_0.max())
 
@@ -473,8 +470,9 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertEqual(attrs, {u'units': u'dbl', u'long_name': u'double_data', u'standard_name': u'doubles'})
         import numpy
         arr = numpy.asarray(data).flat.copy()
-        lt_1 = arr < 1
-        gt_0 = arr > 0
+        print arr
+        lt_1 = arr <= 10000
+        gt_0 = arr >= 0
         self.assertTrue(lt_1.min(), lt_1.max())
         self.assertTrue(gt_0.min(), gt_0.max())
 
@@ -494,7 +492,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         import numpy
         arr = numpy.asarray(data).flat.copy()
         lt_1 = arr < 2147483647
-        gt_0 = arr > 0
+        gt_0 = arr > -2147483647
         self.assertTrue(lt_1.min(), lt_1.max())
         self.assertTrue(gt_0.min(), gt_0.max())
 
@@ -514,7 +512,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         import numpy
         arr = numpy.asarray(data).flat.copy()
         lt_1 = arr < 32767
-        gt_0 = arr > 0
+        gt_0 = arr > -32767
         self.assertTrue(lt_1.min(), lt_1.max())
         self.assertTrue(gt_0.min(), gt_0.max())
 
