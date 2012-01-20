@@ -1,6 +1,8 @@
+
 __author__ = 'timgiguere'
 __author__ = 'cmueller'
 
+from interface.objects import ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription
 from ion.eoi.agent.handler.dap_external_data_handler \
     import DapExternalDataHandler
 from pyon.core.bootstrap import IonObject
@@ -44,7 +46,7 @@ class DataAcquisitionManagementServicePlaceholder:
         pass
 
     def read_external_data_provider(self, ds_id=''):
-        dprov = IonObject(RT.ExternalDataProvider)
+        dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
         if ds_id == HFR or ds_id == HFR_LOCAL:
             dprov.institution.name = "HFRNET UCSD"
         elif ds_id == KOKAGG:
@@ -83,8 +85,7 @@ class DataAcquisitionManagementServicePlaceholder:
         pass
 
     def read_data_source(self, ds_id=''):
-        dsrc = IonObject(RT.DataSource)
-        dsrc.protocol_type = "DAP"
+        dsrc = DataSource(protocol_type="DAP", institution=Institution(), contact=ContactInformation())
         if ds_id == HFR:
             dsrc.connection_params["base_data_url"] = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
         elif ds_id == HFR_LOCAL:
@@ -137,7 +138,7 @@ class DataAcquisitionManagementServicePlaceholder:
 
     def read_external_dataset(self, ds_id=''):
         CWD = os.getcwd()
-        ext_ds = IonObject(RT.ExternalDataset)
+        ext_ds = ExternalDataset(name="test", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
         if ds_id == HFR:
             ext_ds.dataset_description.parameters
             ext_ds.dataset_description.parameters["dataset_path"] = "HFRNet/USEGC/6km/hourly/RTV"

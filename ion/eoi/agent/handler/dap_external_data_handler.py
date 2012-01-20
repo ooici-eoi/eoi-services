@@ -3,6 +3,7 @@
 __author__ = 'cmueller'
 
 from pyon.public import log
+from interface.objects import DatasetDescriptionDataSamplingEnum
 from ion.eoi.agent.handler.base_external_data_handler import *
 from ion.eoi.agent.utils import ArrayIterator
 from netCDF4 import Dataset, date2index
@@ -152,7 +153,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 #        else:
 #            data_sampling = self._dataset_desc_obj.data_sampling
 
-        data_sampling = self._ext_dataset_res.dataset_description.data_sampling.value
+        data_sampling = self._ext_dataset_res.dataset_description.data_sampling
 
         if recalculate:
             self._signature = None
@@ -183,7 +184,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 var_atts[ak] = hashlib.sha1(str(att)).hexdigest()
                 var_sha.update(var_atts[ak])
 
-            if data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.FIRST_LAST:
+            if data_sampling is DatasetDescriptionDataSamplingEnum.FIRST_LAST:
                 slice_first = []
                 slice_last = []
                 for s in var.shape:
@@ -199,11 +200,11 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 var_sha.update(str(dat_f))
                 var_sha.update(str(dat_l))
 
-            elif data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.FULL:
+            elif data_sampling is DatasetDescriptionDataSamplingEnum.FULL:
                 var_sha.update(str(var[:]))
                 pass
-            elif data_sampling is self._ext_dataset_res.dataset_description.data_sampling.enum.SHOTGUN:
-                shotgun_count = kwargs[self._ext_dataset_res.dataset_description.data_sampling.enum.SHOTGUN_COUNT] or 10
+            elif data_sampling is DatasetDescriptionDataSamplingEnum.SHOTGUN:
+                shotgun_count = kwargs[DatasetDescriptionDataSamplingEnum.SHOTGUN_COUNT] or 10
                 pass
             else:
                 pass

@@ -9,6 +9,7 @@ from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandl
 from ion.eoi.agent.handler.base_external_data_handler import DataAcquisitionError, InstantiationError
 from pyon.util.unit_test import PyonTestCase
 from pyon.public import IonObject, RT
+from interface.objects import ExternalDataset, DataSource, DatasetDescription, UpdateDescription, ContactInformation, ExternalDataRequest, DatasetDescriptionDataSamplingEnum
 import unittest
 
 
@@ -250,7 +251,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         th, tn = tempfile.mkstemp(prefix=(key + "_"), suffix='.nc')
         self._create_tst_data_set(th, tn, key)
 
-        ext_ds = IonObject(RT.ExternalDataset, name="test")
+        ext_ds = ExternalDataset(name="test", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
         ext_ds.dataset_description.parameters["dataset_path"] = tn
         ext_ds.dataset_description.parameters["temporal_dimension"] = 'time'
 
@@ -265,14 +266,14 @@ class TestDapExternalDataHandler(PyonTestCase):
 
 #    @unittest.skip("")
     def test_constructor(self):
-        ext_ds = IonObject(RT.ExternalDataset, name="test")
+        ext_ds = ExternalDataset(name="test", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
         ext_ds.dataset_description.parameters["dataset_path"] = self._dsh_list["DS_BASE"][1]
         ext_ds.dataset_description.parameters["temporal_dimension"] = 'time'
 
         dsh = DapExternalDataHandler(ext_dataset=ext_ds)
         self.assertTrue(type(dsh), DapExternalDataHandler)
 
-        dsrc = IonObject("DataSource", name="test")
+        dsrc = DataSource(name="test")
         dsrc.connection_params["base_data_url"] = ""
 
         dsh1 = DapExternalDataHandler(data_source=dsrc, ext_dataset=ext_ds)
@@ -301,7 +302,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         ## Tests the case where the signature has already been calculated
         signature = dsh.get_signature()
 
-        dsh._ext_dataset_res.dataset_description.data_sampling = dsh._ext_dataset_res.dataset_description.data_sampling.enum.NONE
+        dsh._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
         signature = dsh.get_signature(recalculate=True)
         self.assertEqual(signature, self._ds_base_sig)
 
@@ -329,10 +330,10 @@ class TestDapExternalDataHandler(PyonTestCase):
 #    @unittest.skip("")
     def test_compare_data_different_first_last(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
-        dsh_1._ext_dataset_res.dataset_description.data_sampling = dsh_1._ext_dataset_res.dataset_description.data_sampling.enum.FIRST_LAST
+        dsh_1._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
 
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
-        dsh_2._ext_dataset_res.dataset_description.data_sampling = dsh_2._ext_dataset_res.dataset_description.data_sampling.enum.FIRST_LAST
+        dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
 
         dcr = dsh_1.compare(dsh_2.get_signature())
         self.assertTrue(dcr.get_result()[0], "MOD_DATA")
@@ -340,10 +341,10 @@ class TestDapExternalDataHandler(PyonTestCase):
 #    @unittest.skip("")
     def test_compare_data_different_full(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
-        dsh_1._ext_dataset_res.dataset_description.data_sampling = dsh_1._ext_dataset_res.dataset_description.data_sampling.enum.FULL
+        dsh_1._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
 
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
-        dsh_2._ext_dataset_res.dataset_description.data_sampling = dsh_2._ext_dataset_res.dataset_description.data_sampling.enum.FULL
+        dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
 
         dcr = dsh_1.compare(dsh_2.get_signature())
         self.assertTrue(dcr.get_result()[0], "MOD_DATA")
@@ -420,7 +421,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_multidim_byte(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="bytedata", slice=(slice(0), slice(0, 10), slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="bytedata"
+        req.slice=(slice(0), slice(0, 10), slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
         #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -440,7 +443,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_multidim_float(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="floatdata", slice=(slice(0), slice(0, 10), slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="floatdata"
+        req.slice=(slice(0), slice(0, 10), slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
 #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -460,7 +465,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_multidim_double(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="doubledata", slice=(slice(0), slice(0, 10), slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="doubledata"
+        req.slice=(slice(0), slice(0, 10), slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
 
@@ -480,7 +487,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_multidim_int(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="intdata", slice=(slice(0), slice(0, 10), slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="intdata"
+        req.slice=(slice(0), slice(0, 10), slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
         #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -500,7 +509,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_multidim_short(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="shortdata", slice=(slice(0), slice(0, 10), slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="shortdata"
+        req.slice=(slice(0), slice(0, 10), slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
         #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -520,7 +531,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_onedim(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="longitude", slice=(slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="longitude"
+        req.slice=(slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
 #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -536,7 +549,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_with_dim_no_var(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="lon", slice=(slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="lon"
+        req.slice=(slice(0, 10))
 
         name, data, typecode, dims, attrs = dsh_1.acquire_data_by_request(request=req)
 #        raise StandardError(str(name) + "\n" + str(data) + "\n" + str(typecode) + "\n" + str(dims) + "\n" + str(attrs))
@@ -552,7 +567,9 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_acquire_data_by_request_with_no_dim_or_var(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        req = IonObject("ExternalDataRequest", name="no_var_or_dim_with_this_name", slice=(slice(0, 10)))
+        req = ExternalDataRequest()
+        req.name="no_var_or_dim_with_this_name"
+        req.slice=(slice(0, 10))
 
         with self.assertRaises(DataAcquisitionError) as cm:
             dsh_1.acquire_data_by_request(request=req)

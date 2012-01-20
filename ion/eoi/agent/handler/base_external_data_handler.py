@@ -2,10 +2,7 @@
 
 __author__ = 'cmueller'
 
-from pyon.service.service import BaseClients
-from pyon.public import IonObject
-from pyon.public import log
-from ion.eoi.agent.interface.iexternal_data_handler_controller import IExternalDataHandlerController
+from ion.eoi.agent.handler.iface.iexternal_data_handler_controller import IExternalDataHandlerController
 from zope.interface import implements
 
 # Observatory Status Types
