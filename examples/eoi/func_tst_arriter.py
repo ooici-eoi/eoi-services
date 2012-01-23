@@ -1,7 +1,7 @@
 from __future__ import division
 
 from netCDF4 import Dataset
-from ion.eoi.agent.utils import ArrayIterator
+from eoi.agent.utils import ArrayIterator
 
 class TestArriter():
     def __init__(self, block_size=10000):

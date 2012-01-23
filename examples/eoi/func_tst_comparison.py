@@ -2,9 +2,6 @@
 
 __author__ = 'cmueller'
 
-from pyon.public import log
-from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
-import sys
 from examples.eoi.func_tst_base import *
 
 if __name__ == '__main__':

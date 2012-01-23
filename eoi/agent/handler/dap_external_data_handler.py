@@ -2,12 +2,10 @@
 
 __author__ = 'cmueller'
 
-from pyon.public import log
 from interface.objects import DatasetDescriptionDataSamplingEnum
-from ion.eoi.agent.handler.base_external_data_handler import *
-from ion.eoi.agent.utils import ArrayIterator
-from netCDF4 import Dataset, date2index
-from datetime import datetime, timedelta
+from eoi.agent.handler.base_external_data_handler import *
+from eoi.agent.utils import ArrayIterator
+from netCDF4 import Dataset
 import cdms2
 import hashlib
 import numpy

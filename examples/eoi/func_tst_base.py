@@ -1,14 +1,6 @@
 __author__ = 'cmueller'
 
-from pyon.public import IonObject, RT
-from pyon.container.shell_api import container
-from pyon.service.service import BaseClients
-from pyon.util.context import LocalContextMixin
-from pyon.public import log
-import os
-import pprint
-from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
-from ion.eoi.agent.data_acquisition_management_service_Placeholder import *
+from eoi.agent.data_acquisition_management_service_Placeholder import *
 
 EXTERNAL_DATA_PROVIDER = "ext_data_prov"
 DATA_SOURCE = "data_src"

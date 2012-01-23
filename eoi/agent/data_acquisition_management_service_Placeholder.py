@@ -3,10 +3,8 @@ __author__ = 'timgiguere'
 __author__ = 'cmueller'
 
 from interface.objects import ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription
-from ion.eoi.agent.handler.dap_external_data_handler \
-    import DapExternalDataHandler
-from pyon.core.bootstrap import IonObject
-from pyon.public import RT
+from eoi.agent.handler.dap_external_data_handler\
+import DapExternalDataHandler
 import os
 
 HFR = "hfr"

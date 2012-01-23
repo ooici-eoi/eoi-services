@@ -2,9 +2,7 @@ __author__ = 'cmueller'
 
 from nose.plugins.attrib import attr
 from pyon.util.int_test import IonIntegrationTestCase
-from pyon.public import log
-from ion.eoi.agent.data_acquisition_management_service_Placeholder import *
-import unittest
+from eoi.agent.data_acquisition_management_service_Placeholder import *
 
 @attr('INT', group='eoi')
 class TestIntDapExternalDataHandler(IonIntegrationTestCase):

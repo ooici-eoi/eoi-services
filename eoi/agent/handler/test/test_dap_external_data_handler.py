@@ -5,10 +5,9 @@ import tempfile
 import os
 from netCDF4 import Dataset
 from nose.plugins.attrib import attr
-from ion.eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
-from ion.eoi.agent.handler.base_external_data_handler import DataAcquisitionError, InstantiationError
+from eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
+from eoi.agent.handler.base_external_data_handler import DataAcquisitionError, InstantiationError
 from pyon.util.unit_test import PyonTestCase
-from pyon.public import IonObject, RT
 from interface.objects import ExternalDataset, DataSource, DatasetDescription, UpdateDescription, ContactInformation, ExternalDataRequest, DatasetDescriptionDataSamplingEnum
 import unittest
 
@@ -200,9 +199,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         else:
             longitudes[:] = numpy.arange(-90, -60, 0.5)
 
-        from numpy.random import uniform
-        from numpy.random import randint
-
         byte_data = ds.createVariable('bytedata', 'i1', ('time', 'lat', 'lon',))
         byte_data.standard_name = "bytes"
         byte_data.long_name = "byte_data"
@@ -239,7 +235,7 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         # fill in the temporal data
         from datetime import datetime, timedelta
-        from netCDF4 import num2date, date2num
+        from netCDF4 import  date2num
         dates = [datetime(2011, 12, 1) + n * timedelta(hours=1) for n in range(float_data.shape[0])]
         time[:] = date2num(dates, units=time.units, calendar=time.calendar)
 

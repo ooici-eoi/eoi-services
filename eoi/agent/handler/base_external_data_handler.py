@@ -2,7 +2,7 @@
 
 __author__ = 'cmueller'
 
-from ion.eoi.agent.handler.iface.iexternal_data_handler_controller import IExternalDataHandlerController
+from eoi.agent.handler.iface.iexternal_data_handler_controller import IExternalDataHandlerController
 from zope.interface import implements
 
 # Observatory Status Types
