@@ -29,6 +29,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         else:
             raise InstantiationError("Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
 
+        log.debug("Dataset URL: %s" % self._ds_url)
         self._ds = Dataset(self._ds_url)
 
     def close(self):
