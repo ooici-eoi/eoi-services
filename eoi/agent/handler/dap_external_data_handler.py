@@ -2,6 +2,7 @@
 
 __author__ = 'cmueller'
 
+from pyon.public import log
 from interface.objects import DatasetDescriptionDataSamplingEnum
 from eoi.agent.handler.base_external_data_handler import *
 from eoi.agent.utils import ArrayIterator
@@ -29,6 +30,10 @@ class DapExternalDataHandler(BaseExternalDataHandler):
             raise InstantiationError("Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
 
         self._ds = Dataset(self._ds_url)
+
+    def close(self):
+        log.debug("Close the local Dataset object")
+        self._ds.close()
 
     def get_attributes(self, scope=None):
         """

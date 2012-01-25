@@ -95,3 +95,8 @@ class IExternalDataHandlerController(Interface):
 
 
         """
+    def close():
+        """
+        Closes any open network connections and releases any resources used by this DataHandler.
+        This method is called when the ExternalAgent process is terminated and should completely clean-up anything in use by this DataHandler
+        """
