@@ -11,11 +11,8 @@ from interface.services.dm.ipubsub_management_service import PubsubManagementSer
 from interface.services.eoi.iexternal_observatory_agent_service import ExternalObservatoryAgentServiceClient
 from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
 from interface.services.sa.idata_acquisition_management_service import DataAcquisitionManagementServiceClient
-from interface.services.icontainer_agent import ContainerAgentClient
-from pyon.core.bootstrap import IonObject
-from pyon.ion.resource import RT, AT
 from pyon.util.containers import DotDict
-from pyon.public import log
+from pyon.public import log, PRED
 from pyon.core.exception import IonException
 from pyon.util.unit_test import PyonTestCase
 from mock import Mock
@@ -117,7 +114,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         # Create DataProvider
         dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
-        dprov.institution.name = "OOI CGSN"
+#        dprov.institution.name = "OOI CGSN"
         dprov.contact.name = "Robert Weller"
         dprov.contact.email = "rweller@whoi.edu"
 
@@ -144,7 +141,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         dsrc_model.data_handler_class = "DapExternalDataHandler"
 
         ## Run everything through DAMS
-        #TODO: Uncomment when DAMS works
+        #TODO: Uncomment when CRUD methods in DAMS are implemented
         #        self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
         #        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
         #        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
@@ -155,19 +152,15 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         #TODO: this needs to be added to DAMS
         ext_dsrc_model_id, _ = self.rr_cli.create(dsrc_model)
 
-        # Create the output stream - TODO: Should be done within DAMS?
-        output_stream = Stream(name='ncom_stream', description='an external dataset stream', producers=['science.data'])
-        out_stream_id = self.pubsub_cli.create_stream(output_stream)
-
         ## Associate everything
-        self.rr_cli.create_association(self.ncom_ds_id, AT.hasStream, out_stream_id)
-        log.debug("Associated ExternalDataset %s with Stream %s" % (self.ncom_ds_id, out_stream_id))
-        self.rr_cli.create_association(self.ncom_ds_id, AT.hasSource, ext_dsrc_id)
+        self.rr_cli.create_association(self.ncom_ds_id, PRED.hasSource, ext_dsrc_id)
         log.debug("Associated ExternalDataset %s with DataSource %s" % (self.ncom_ds_id, ext_dsrc_id))
-        self.rr_cli.create_association(ext_dsrc_id, AT.hasProvider, ext_dprov_id)
+        self.rr_cli.create_association(ext_dsrc_id, PRED.hasProvider, ext_dprov_id)
         log.debug("Associated DataSource %s with ExternalDataProvider %s" % (ext_dsrc_id, ext_dprov_id))
-        self.rr_cli.create_association(ext_dsrc_id, AT.hasModel, ext_dsrc_model_id)
+        self.rr_cli.create_association(ext_dsrc_id, PRED.hasModel, ext_dsrc_model_id)
         log.debug("Associated DataSource %s with ExternalDataSourceModel %s" % (ext_dsrc_id, ext_dsrc_model_id))
+        data_prod_id = self.dams_cli.register_external_data_set(self.ncom_ds_id)
+        log.debug("Registered ExternalDataset {%s}: DataProducer ID = %s" % (self.ncom_ds_id, data_prod_id))
 
     def _setup_hfr(self):
         # TODO: some or all of this (or some variation) should move to DAMS
@@ -176,7 +169,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         # Create DataProvider
         dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
-        dprov.institution.name = "HFR UCSD"
+#        dprov.institution.name = "HFR UCSD"
 
         # Create DataSource
         dsrc = DataSource(protocol_type="DAP", institution=Institution(), contact=ContactInformation())
@@ -196,7 +189,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         dsrc_model.data_handler_class = "DapExternalDataHandler"
 
         ## Run everything through DAMS
-        #TODO: Uncomment when DAMS works
+        #TODO: Uncomment when CRUD methods in DAMS are implemented
         #        self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
         #        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
         #        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
@@ -207,32 +200,27 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         #TODO: this needs to be added to DAMS
         ext_dsrc_model_id, _ = self.rr_cli.create(dsrc_model)
 
-        # Create the output stream - TODO: Should be done within DAMS?
-        output_stream = Stream(name='hfr_stream', description='an external dataset stream', producers=['science.data'])
-        out_stream_id = self.pubsub_cli.create_stream(output_stream)
-
-        ## Associate everything
-        self.rr_cli.create_association(self.hfr_ds_id, AT.hasStream, out_stream_id)
-        log.debug("Associated ExternalDataset %s with Stream %s" % (self.hfr_ds_id, out_stream_id))
-        self.rr_cli.create_association(self.hfr_ds_id, AT.hasSource, ext_dsrc_id)
+        self.rr_cli.create_association(self.hfr_ds_id, PRED.hasSource, ext_dsrc_id)
         log.debug("Associated ExternalDataset %s with DataSource %s" % (self.hfr_ds_id, ext_dsrc_id))
-        self.rr_cli.create_association(ext_dsrc_id, AT.hasProvider, ext_dprov_id)
+        self.rr_cli.create_association(ext_dsrc_id, PRED.hasProvider, ext_dprov_id)
         log.debug("Associated DataSource %s with ExternalDataProvider %s" % (ext_dsrc_id, ext_dprov_id))
-        self.rr_cli.create_association(ext_dsrc_id, AT.hasModel, ext_dsrc_model_id)
+        self.rr_cli.create_association(ext_dsrc_id, PRED.hasModel, ext_dsrc_model_id)
         log.debug("Associated DataSource %s with ExternalDataSourceModel %s" % (ext_dsrc_id, ext_dsrc_model_id))
+        data_prod_id = self.dams_cli.register_external_data_set(self.hfr_ds_id)
+        log.debug("Registered ExternalDataset {%s}: DataProducer ID = %s" % (self.hfr_ds_id, data_prod_id))
 
 
 
 ########## Tests ##########
 
-    @unittest.skip("")
+#    @unittest.skip("")
     def test_spawn_worker(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
         log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
         self.assertEquals(proc_name, self.ncom_ds_id+'_worker')
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_worker(self, resource_id=''):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -241,7 +229,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.get_worker(resource_id=self.ncom_ds_id)
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_capabilities(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -252,25 +240,23 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
 #    @unittest.skip("")
     def test_execute_single_worker(self):
-        id = self.ncom_ds_id
+        ds_id = self.ncom_ds_id
 
-        log.debug("test_spawn_worker with ds_id: %s" % id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(id)
+        log.debug("test_spawn_worker with ds_id: %s" % ds_id)
+        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(ds_id)
         log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
 
 #        with self.assertRaises(IonException):
 #            self.eoas_cli.execute()
 
-        cmd = AgentCommand(command_id="111", command="get_attributes")
-        cmd.ds_id = id
+        cmd = AgentCommand(command_id="111", command="get_attributes", kwargs={"ds_id":ds_id})
         log.debug("Execute AgentCommand: %s" % cmd)
         ret = self.eoas_cli.execute(command=cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, "SUCCESS")
         self.assertTrue(type(ret.result[0]), dict)
 
-        cmd = AgentCommand(command_id="112", command="get_signature")
-        cmd.ds_id = id
+        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":ds_id})
         log.debug("Execute AgentCommand: %s" % cmd)
         ret = self.eoas_cli.execute(command=cmd)
         log.debug("Returned: %s" % ret)
@@ -287,24 +273,35 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.hfr_ds_id)
         log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
 
-        cmd = AgentCommand(command_id="111", command="get_signature")
-        cmd.ds_id = self.ncom_ds_id
+        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":self.ncom_ds_id})
         log.debug("Execute AgentCommand: %s" % cmd)
         ret = self.eoas_cli.execute(command=cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, "SUCCESS")
         self.assertTrue(type(ret.result[0]), dict)
 
-        cmd = AgentCommand(command_id="111", command="get_signature")
-        cmd.ds_id = self.hfr_ds_id
+        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":self.hfr_ds_id})
         log.debug("Execute AgentCommand: %s" % cmd)
         ret = self.eoas_cli.execute(command=cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, "SUCCESS")
         self.assertTrue(type(ret.result[0]), dict)
 
+#    @unittest.skip("")
+    def test_execute_acquire_data(self):
+        ds_id = self.ncom_ds_id
 
-    @unittest.skip("")
+        log.debug("test_spawn_worker with ds_id: %s" % ds_id)
+        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(ds_id)
+        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+
+        cmd = AgentCommand(command_id="113", command="acquire_data", kwargs={"ds_id":ds_id})
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self.eoas_cli.execute(command=cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, "SUCCESS")
+
+    @unittest.skip("Underlying method not yet implemented")
     def test_set_param(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -313,7 +310,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.set_param(name="param", value="value")
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_param(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -322,7 +319,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.get_param(name="param")
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_execute_agent(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -331,7 +328,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.execute_agent()
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_set_agent_param(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
@@ -340,7 +337,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.set_agent_param(name="param", value="value")
 
-    @unittest.skip("")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_agent_param(self):
         log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
         proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)

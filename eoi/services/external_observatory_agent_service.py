@@ -72,7 +72,7 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 
     def execute(self, command=None):
         if command is not None:
-            rid = command.ds_id
+            rid = command.kwargs['ds_id']
             log.debug("execute: res_id=%s" % rid)
             cli = self._worker_clients[rid]
             if cli is not None:

@@ -6,15 +6,15 @@
 @author Christopher Mueller
 @brief 
 """
-from interface.objects import AgentCommandResult, AgentCommand
 
 __author__ = 'Christopher Mueller'
 __licence__ = 'Apache 2.0'
 
-from pyon.public import log, AT, RT
+from pyon.public import log, PRED, RT
 from pyon.agent.agent import ResourceAgent
 from pyon.ion.endpoint import StreamPublisher
 from eoi.agent.handler.base_external_data_handler import BaseExternalDataHandler
+from interface.objects import AgentCommandResult, AgentCommand
 from interface.services.dm.ipubsub_management_service import PubsubManagementServiceClient
 from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
 
@@ -45,24 +45,30 @@ class ExternalObservatoryAgent(ResourceAgent):
         ext_ds_res = self.resreg_cli.read(object_id=ext_dataset_id)
         log.debug("Retrieved ExternalDataset: %s" % ext_ds_res)
 
-        dsrc_res, dsrc_acc = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=AT.hasSource, object_type=RT.DataSource)
+        dsrc_res, dsrc_acc = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=PRED.hasSource, object_type=RT.DataSource)
         dsrc_res = dsrc_res[0]
-        dsrc_id = dsrc_acc[0][3]
+        dsrc_id = dsrc_acc[0].o
         log.debug("Found associated DataSource: %s" % dsrc_id)
 
-        edp_res, edp_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=AT.hasProvider, object_type=RT.ExternalDataProvider)
+        edp_res, edp_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=PRED.hasProvider, object_type=RT.ExternalDataProvider)
         edp_res = edp_res[0]
-        edp_id = edp_acc[0][3]
+        edp_id = edp_acc[0].o
         log.debug("Found associated ExternalDataProvider: %s" % edp_id)
 
-        mdl_res, mdl_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=AT.hasModel, object_type=RT.ExternalDataSourceModel)
+        mdl_res, mdl_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=PRED.hasModel, object_type=RT.ExternalDataSourceModel)
         mdl_res = mdl_res[0]
-        mdl_id = mdl_acc[0][3]
+        mdl_id = mdl_acc[0].o
         log.debug("Found associated ExternalDataSourceModel: %s" % mdl_id)
 
-        stream_id, _ = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=AT.hasStream, object_type=RT.Stream, id_only=True)
+        dprod_id, _ = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=PRED.hasDataProducer, object_type=RT.DataProducer, id_only=True)
+        dprod_id = dprod_id[0]
+        log.debug("Found associated DataProducer: %s" % dprod_id)
+
+        stream_id, _ = self.resreg_cli.find_objects(subject=dprod_id, predicate=PRED.hasStream, object_type=RT.Stream, id_only=True)
         stream_id = stream_id[0]
         log.debug("Found associated Stream: %s" % stream_id)
+
+
 
         # configure the stream publisher
         log.debug("Configure StreamPublisher")
@@ -104,9 +110,19 @@ class ExternalObservatoryAgent(ResourceAgent):
                 except Exception as ex:
                     ret.result = [ex]
                     ret.status = "ERROR"
-            elif cmd_str is "acquire_data":
+            elif cmd_str == "acquire_data":
                 try:
-                    pass
+                    data_iter = self._data_handler.acquire_data()
+                    vlist=[]
+                    for count, ivals in enumerate(data_iter):
+                        vn, slice_, rng, data = ivals
+                        if vn not in vlist:
+                            vlist.append(vn)
+                        #TODO: Put the packets on the stream
+#                        self._stream_publisher.publish()
+
+                    ret.result = [{'Number of Iterations':count, 'Var Names':vlist}]
+                    ret.status = "SUCCESS"
                 except Exception as ex:
                     ret.result = [ex]
                     ret.status = "ERROR"
