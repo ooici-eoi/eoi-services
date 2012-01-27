@@ -46,15 +46,17 @@ class DataAcquisitionManagementServicePlaceholder:
     def read_external_data_provider(self, ds_id=''):
         dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
         if ds_id == HFR or ds_id == HFR_LOCAL:
-            dprov.institution.name = "HFRNET UCSD"
+#            dprov.institution.name = "HFRNET UCSD"
+            pass
         elif ds_id == KOKAGG:
-            dprov.institution.name = "University of Hawaii"
+#            dprov.institution.name = "University of Hawaii"
+            pass
         elif ds_id == AST2:
-            dprov.institution.name = "OOI CGSN"
+#            dprov.institution.name = "OOI CGSN"
             dprov.contact.name = "Robert Weller"
             dprov.contact.email = "rweller@whoi.edu"
         elif ds_id == SSTA:
-            dprov.institution.name = "Remote Sensing Systems"
+#            dprov.institution.name = "Remote Sensing Systems"
             dprov.contact.email = "support@gmss.com"
         else:
             return None
