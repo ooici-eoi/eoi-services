@@ -410,7 +410,7 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertTrue(dsh_1.has_new_data())
 
-#    @unittest.skip("Needs refactoring -> ExternalDataRequest properties are wrong")
+    @unittest.skip("Needs refactoring -> ExternalDataRequest properties are wrong")
     def test_acquire_data_by_request_multidim_byte(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 

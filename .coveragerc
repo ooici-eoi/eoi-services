@@ -1,6 +1,6 @@
 [run]
 source =
-    ion
+    eoi
 omit =
     */test/*
 

@@ -17,7 +17,7 @@ class TestHfrRadialDataHandler(PyonTestCase):
                  'ERSC', 'ERTC', 'XDST', 'YDST', 'RNGE', 'BEAR', 'VELO', 'HEAD', 'SPRC']
 
     def setUp(self):
-        self._hfr_data_handler = HfrRadialDataHandler(data_source='/Users/timgiguere/Documents/Dev/code/eoi-services/test_data/RDLi_SEAB_2011_08_24_1600.ruv')
+        self._hfr_data_handler = HfrRadialDataHandler(data_source='test_data/RDLi_SEAB_2011_08_24_1600.ruv')
         pass
 
     def tearDown(self):
