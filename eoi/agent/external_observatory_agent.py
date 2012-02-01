@@ -91,48 +91,98 @@ class ExternalObservatoryAgent(ResourceAgent):
         self._data_handler.close()
         ResourceAgent._on_quit(self)
 
-    def execute(self, command=None):
-        log.debug("execute (worker): command=%s" % command)
-        ret = AgentCommandResult(command_id=command.command_id, command=command.command)
-        if command is not None:
-            cmd_str = command.command
-            if cmd_str == "get_attributes":
-                try:
-                    ret.result = [self._data_handler.get_attributes()]
-                    ret.status = "SUCCESS"
-                except Exception as ex:
-                    ret.status = "ERROR"
-                    ret.result = [ex]
-            elif cmd_str == "get_signature":
-                try:
-                    ret.result = [self._data_handler.get_signature()]
-                    ret.status = "SUCCESS"
-                except Exception as ex:
-                    ret.result = [ex]
-                    ret.status = "ERROR"
-            elif cmd_str == "acquire_data":
-                try:
-                    data_iter = self._data_handler.acquire_data()
-                    vlist=[]
-                    for count, ivals in enumerate(data_iter):
-                        vn, slice_, rng, data = ivals
-                        if vn not in vlist:
-                            vlist.append(vn)
-                        #TODO: Put the packets on the stream
-#                        self._stream_publisher.publish()
 
-                    ret.result = [{'Number of Iterations':count, 'Var Names':vlist}]
-                    ret.status = "SUCCESS"
-                except Exception as ex:
-                    ret.result = [ex]
-                    ret.status = "ERROR"
-                pass
-            else:
-                ret.status = "UNKNOWN COMMAND"
-        else:
-            ret.status = "AgentCommand is None"
+###### Resource Commands ######
+    def rcmd_get_status(self, *args, **kwargs):
+        return self._data_handler.get_status(*args, **kwargs)
 
-        return ret
+    def rcmd_has_new_data(self, *args, **kwargs):
+        return self._data_handler.has_new_data(*args, **kwargs)
+
+    def rcmd_acquire_data(self, *args, **kwargs):
+        data_iter = self._data_handler.acquire_data(*args, **kwargs)
+        vlist=[]
+        for count, ivals in enumerate(data_iter):
+            vn, slice_, rng, data = ivals
+            if vn not in vlist:
+                vlist.append(vn)
+                #TODO: Put the packets on the stream
+#                self._stream_publisher.publish()
+
+        return {'Number of Iterations':count, 'Var Names':vlist}
+
+    def rcmd_acquire_new_data(self, *args, **kwargs):
+        data_iter = self._data_handler.acquire_new_data(*args, **kwargs)
+        vlist=[]
+        for count, ivals in enumerate(data_iter):
+            vn, slice_, rng, data = ivals
+            if vn not in vlist:
+                vlist.append(vn)
+                #TODO: Put the packets on the stream
+#                self._stream_publisher.publish()
+
+        return {'Number of Iterations':count, 'Var Names':vlist}
+
+    def rcmd_acquire_data_by_request(self, *args, **kwargs):
+        return self._data_handler.acquire_data_by_request(*args, **kwargs)
+
+    def rcmd_get_attributes(self, *args, **kwargs):
+        return self._data_handler.get_attributes(*args, **kwargs)
+
+    def rcmd_get_signature(self, *args, **kwargs):
+        return self._data_handler.get_signature(*args, **kwargs)
+
+    def rcmd_compare(self, *args, **kwargs):
+        return self._data_handler.compare(*args, **kwargs)
+
+    def rcmd_close(self, *args, **kwargs):
+        return self._data_handler.close(*args, **kwargs)
+
+
+###### First pass - not correct architecturally ######
+
+#    def execute(self, command=None):
+#        log.debug("execute (worker): command=%s" % command)
+#        ret = AgentCommandResult(command_id=command.command_id, command=command.command)
+#        if command is not None:
+#            cmd_str = command.command
+#            if cmd_str == "get_attributes":
+#                try:
+#                    ret.result = [self._data_handler.get_attributes()]
+#                    ret.status = "SUCCESS"
+#                except Exception as ex:
+#                    ret.status = "ERROR"
+#                    ret.result = [ex]
+#            elif cmd_str == "get_signature":
+#                try:
+#                    ret.result = [self._data_handler.get_signature()]
+#                    ret.status = "SUCCESS"
+#                except Exception as ex:
+#                    ret.result = [ex]
+#                    ret.status = "ERROR"
+#            elif cmd_str == "acquire_data":
+#                try:
+#                    data_iter = self._data_handler.acquire_data()
+#                    vlist=[]
+#                    for count, ivals in enumerate(data_iter):
+#                        vn, slice_, rng, data = ivals
+#                        if vn not in vlist:
+#                            vlist.append(vn)
+#                        #TODO: Put the packets on the stream
+##                        self._stream_publisher.publish()
+#
+#                    ret.result = [{'Number of Iterations':count, 'Var Names':vlist}]
+#                    ret.status = "SUCCESS"
+#                except Exception as ex:
+#                    ret.result = [ex]
+#                    ret.status = "ERROR"
+#                pass
+#            else:
+#                ret.status = "UNKNOWN COMMAND"
+#        else:
+#            ret.status = "AgentCommand is None"
+#
+#        return ret
 
 
 
