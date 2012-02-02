@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
 """
-@package 
-@file TestExternalObservatoryAgentService
+@package eoi.agent.services.test
+@file test_external_observatory_agent_service
 @author Christopher Mueller
 @brief 
 """
 
-from interface.services.dm.ipubsub_management_service import PubsubManagementServiceClient
 from interface.services.eoi.iexternal_observatory_agent_service import ExternalObservatoryAgentServiceClient
 from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
 from interface.services.sa.idata_acquisition_management_service import DataAcquisitionManagementServiceClient
@@ -20,12 +19,12 @@ from nose.plugins.attrib import attr
 import unittest
 from pyon.util.int_test import IonIntegrationTestCase
 from eoi.services.external_observatory_agent_service import ExternalObservatoryAgentService
-from interface.objects import ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, Stream, AgentCommand
+from interface.objects import ExternalDataAgent, ExternalDataAgentInstance, ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, Stream, AgentCommand
 
 __author__ = 'Christopher Mueller'
 __licence__ = 'Apache 2.0'
 
-@attr('UNIT',group='eoi-svcs')
+@attr('UNIT',group='eoi-svc')
 class TestExternalObservatoryAgentService(PyonTestCase):
     
     def setUp(self):
@@ -75,35 +74,41 @@ class TestExternalObservatoryAgentService(PyonTestCase):
     def test_spawn_worker(self):
 
         #mocks
-        self.mock_cc_spawn.return_value = 'mock_pid'
-        self.mock_ps_read_sub.return_value = DotDict({'exchange_name':'mock_exchange'})
-#        self.mock_rr_create.return_value = ('mock_eoas_id','junk')
+#        self.mock_cc_spawn.return_value = 'mock_pid'
+#        self.mock_ps_read_sub.return_value = DotDict({'exchange_name':'mock_exchange'})
+##        self.mock_rr_create.return_value = ('mock_eoas_id','junk')
+#
+#        #execution
+#        res = self.ext_obs_service.spawn_worker('resource_id')
+#        log.debug(res)
+#        print res
+#
+#        #assertions
+##        self.mock_ps_read_sub.assert_called_once_with(resource_id='resource_id')
+#        self.assertTrue(False)
+#        self.assertTrue(self.mock_cc_spawn.called)
+#        self.assertEquals(res, 'mock_pid')
+        pass
 
-        #execution
-        res = self.ext_obs_service.spawn_worker('resource_id')
-        log.debug(res)
-        print res
-
-        #assertions
-#        self.mock_ps_read_sub.assert_called_once_with(resource_id='resource_id')
-        self.assertTrue(False)
-        self.assertTrue(self.mock_cc_spawn.called)
-        self.assertEquals(res, 'mock_pid')
 
 
-
-@attr('INT', group='eoi-svcs')
+@attr('INT', group='eoi-svc')
 class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
     def setUp(self):
         self._start_container()
-#        self.container.start_rel_from_url(rel_url='res/deploy/r2deploy.yml')
         self.container.start_rel_from_url(rel_url='res/deploy/r2eoi.yml')
 
         self.eoas_cli = ExternalObservatoryAgentServiceClient()
         self.rr_cli = ResourceRegistryServiceClient()
-        self.pubsub_cli = PubsubManagementServiceClient()
         self.dams_cli = DataAcquisitionManagementServiceClient()
+
+        # The EOAS acts as the AgentInstance for this deployment scheme
+        eda_inst = ExternalDataAgentInstance()
+        self.eda_inst_id = self.dams_cli.create_external_data_agent_instance(eda_inst)
+
+        eda = ExternalDataAgent()
+        self.eda_id = self.dams_cli.create_external_data_agent(eda)
 
         self._setup_ncom()
         self._setup_hfr()
@@ -139,29 +144,27 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         dsrc_model = ExternalDataSourceModel(name="dap_model")
         dsrc_model.model = "DAP"
         dsrc_model.data_handler_module = "eoi.agent.handler.dap_external_data_handler"
-        dsrc_model.data_handler_class = "DapExternalDataHandler"
+        dsrc_model.data_handler_class = "DapExternalDataHandler"\
 
         ## Run everything through DAMS
-        #TODO: Uncomment when CRUD methods in DAMS are implemented
-        #        self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
-        #        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
-        #        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ds_id = self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
+        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
+        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ext_dsrc_model_id = self.dams_cli.create_external_data_source_model(dsrc_model)
 
-        self.ncom_ds_id, _ = self.rr_cli.create(dset)
-        ext_dprov_id, _ = self.rr_cli.create(dprov)
-        ext_dsrc_id, _ = self.rr_cli.create(dsrc)
-        #TODO: this needs to be added to DAMS
-        ext_dsrc_model_id, _ = self.rr_cli.create(dsrc_model)
+        # Register the ExternalDataset
+        dprod_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
 
         ## Associate everything
-        self.rr_cli.create_association(self.ncom_ds_id, PRED.hasSource, ext_dsrc_id)
-        log.debug("Associated ExternalDataset %s with DataSource %s" % (self.ncom_ds_id, ext_dsrc_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasProvider, ext_dprov_id)
-        log.debug("Associated DataSource %s with ExternalDataProvider %s" % (ext_dsrc_id, ext_dprov_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasModel, ext_dsrc_model_id)
-        log.debug("Associated DataSource %s with ExternalDataSourceModel %s" % (ext_dsrc_id, ext_dsrc_model_id))
-        data_prod_id = self.dams_cli.register_external_data_set(self.ncom_ds_id)
-        log.debug("Registered ExternalDataset {%s}: DataProducer ID = %s" % (self.ncom_ds_id, data_prod_id))
+        # Convenience method
+        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+
+        # Or using each method
+#        self.dams_cli.assign_data_source_to_external_data_provider(data_source_id=ext_dsrc_id, external_data_provider_id=ext_dprov_id)
+#        self.dams_cli.assign_data_source_to_data_model(data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id)
+#        self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
+#        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
+#        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
 
     def _setup_hfr(self):
         # TODO: some or all of this (or some variation) should move to DAMS
@@ -190,159 +193,196 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         dsrc_model.data_handler_class = "DapExternalDataHandler"
 
         ## Run everything through DAMS
-        #TODO: Uncomment when CRUD methods in DAMS are implemented
-        #        self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
-        #        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
-        #        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ds_id = self.hfr_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
+        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
+        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ext_dsrc_model_id = self.dams_cli.create_external_data_source_model(dsrc_model)
 
-        self.hfr_ds_id, _ = self.rr_cli.create(dset)
-        ext_dprov_id, _ = self.rr_cli.create(dprov)
-        ext_dsrc_id, _ = self.rr_cli.create(dsrc)
-        #TODO: this needs to be added to DAMS
-        ext_dsrc_model_id, _ = self.rr_cli.create(dsrc_model)
+        # Register the ExternalDataset
+        dprod_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
 
-        self.rr_cli.create_association(self.hfr_ds_id, PRED.hasSource, ext_dsrc_id)
-        log.debug("Associated ExternalDataset %s with DataSource %s" % (self.hfr_ds_id, ext_dsrc_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasProvider, ext_dprov_id)
-        log.debug("Associated DataSource %s with ExternalDataProvider %s" % (ext_dsrc_id, ext_dprov_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasModel, ext_dsrc_model_id)
-        log.debug("Associated DataSource %s with ExternalDataSourceModel %s" % (ext_dsrc_id, ext_dsrc_model_id))
-        data_prod_id = self.dams_cli.register_external_data_set(self.hfr_ds_id)
-        log.debug("Registered ExternalDataset {%s}: DataProducer ID = %s" % (self.hfr_ds_id, data_prod_id))
+        ## Associate everything
+        # Convenience method
+#        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+
+        # Or using each method
+        self.dams_cli.assign_data_source_to_external_data_provider(data_source_id=ext_dsrc_id, external_data_provider_id=ext_dprov_id)
+        self.dams_cli.assign_data_source_to_data_model(data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id)
+        self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
+        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
+        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
 
 
 
 ########## Tests ##########
 
-#    @unittest.skip("")
-    def test_spawn_worker(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
-        self.assertEquals(proc_name, self.ncom_ds_id+'_worker')
+##    @unittest.skip("")
+#    def test_spawn_worker(self):
+#        res_id = self.ncom_ds_id
+#
+#        log.debug("test_spawn_worker with res_id: %s" % res_id)
+#        res = self.eoas_cli.get_worker(res_id)
+#        self.assertTrue(res)
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("Underlying method not yet implemented")
     def test_get_worker(self, resource_id=''):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
 
-        with self.assertRaises(IonException):
-            self.eoas_cli.get_worker(resource_id=self.ncom_ds_id)
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
+        self.assertTrue(res)
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("")
     def test_get_capabilities(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
 
-        with self.assertRaises(IonException):
-            self.eoas_cli.get_capabilities()
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
+
+        # Get all the capabilities
+        caps = self.eoas_cli.get_capabilities(res_id)
+        log.debug("all capabilities: %s" % caps)
+        self.assertEqual(type(caps), list)
+
+        # Get the resource commands
+        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['RES_CMD'])
+        log.debug("resource commands: %s" % caps)
+        self.assertEqual(type(caps), list)
+
+        # Get the resource parameters
+        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['RES_PAR'])
+        log.debug("resource parameters: %s" % caps)
+        self.assertEqual(type(caps), list)
+
+        # Get the agent commands
+        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['AGT_CMD'])
+        log.debug("agent commands: %s" % caps)
+        self.assertEqual(type(caps), list)
+
+        # Get the agent parameters
+        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['AGT_PAR'])
+        log.debug("agent parameters: %s" % caps)
+        self.assertEqual(type(caps), list)
 
 #    @unittest.skip("")
     def test_execute_single_worker(self):
-        ds_id = self.ncom_ds_id
+        res_id = self.ncom_ds_id
 
-        log.debug("test_spawn_worker with ds_id: %s" % ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
-#        with self.assertRaises(IonException):
-#            self.eoas_cli.execute()
-
-        cmd = AgentCommand(command_id="111", command="get_attributes", kwargs={"ds_id":ds_id})
+        cmd = AgentCommand(command_id="111", command="get_attributes")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(command=cmd)
+        ret = self.eoas_cli.execute(res_id, command=cmd)
         log.debug("Returned: %s" % ret)
-        self.assertEquals(ret.status, "SUCCESS")
-        self.assertTrue(type(ret.result[0]), dict)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
 
-        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":ds_id})
+        cmd = AgentCommand(command_id="111", command="get_signature")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(command=cmd)
+        ret = self.eoas_cli.execute(res_id, command=cmd)
         log.debug("Returned: %s" % ret)
-        self.assertEquals(ret.status, "SUCCESS")
-        self.assertTrue(type(ret.result[0]), dict)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
 
 #    @unittest.skip("")
     def test_execute_multi_worker(self):
-        log.debug("test_spawn_worker #1 with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
 
-        log.debug("test_spawn_worker #2 with ds_id: %s" % self.hfr_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.hfr_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
-        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":self.ncom_ds_id})
+        res_id2 = self.hfr_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id2)
+        res = self.eoas_cli.get_worker(res_id2)
+
+        cmd = AgentCommand(command_id="112", command="get_signature")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(command=cmd)
+        ret = self.eoas_cli.execute(resource_id=res_id, command=cmd)
         log.debug("Returned: %s" % ret)
-        self.assertEquals(ret.status, "SUCCESS")
-        self.assertTrue(type(ret.result[0]), dict)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
 
-        cmd = AgentCommand(command_id="112", command="get_signature", kwargs={"ds_id":self.hfr_ds_id})
+        cmd = AgentCommand(command_id="112", command="get_signature")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(command=cmd)
+        ret = self.eoas_cli.execute(resource_id=res_id2, command=cmd)
         log.debug("Returned: %s" % ret)
-        self.assertEquals(ret.status, "SUCCESS")
-        self.assertTrue(type(ret.result[0]), dict)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
 
 #    @unittest.skip("")
     def test_execute_acquire_data(self):
-        ds_id = self.ncom_ds_id
+        res_id = self.ncom_ds_id
 
-        log.debug("test_spawn_worker with ds_id: %s" % ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
-        cmd = AgentCommand(command_id="113", command="acquire_data", kwargs={"ds_id":ds_id})
+        cmd = AgentCommand(command_id="113", command="acquire_data")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(command=cmd)
+        ret = self.eoas_cli.execute(res_id, command=cmd)
         log.debug("Returned: %s" % ret)
-        self.assertEquals(ret.status, "SUCCESS")
+        self.assertEquals(ret.status, 0)
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("")
+    def test_execute_acquire_new_data(self):
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
+
+        cmd = AgentCommand(command_id="113", command="acquire_new_data")
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self.eoas_cli.execute(res_id, command=cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, 0)
+
+#    @unittest.skip("Underlying method not yet implemented")
     def test_set_param(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
         with self.assertRaises(IonException):
-            self.eoas_cli.set_param(name="param", value="value")
+            self.eoas_cli.set_param(resource_id=res_id, name="param", value="value")
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("Underlying method not yet implemented")
     def test_get_param(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
         with self.assertRaises(IonException):
-            self.eoas_cli.get_param(name="param")
+            self.eoas_cli.get_param(resource_id=res_id, name="param")
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("Underlying method not yet implemented")
     def test_execute_agent(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
         with self.assertRaises(IonException):
-            self.eoas_cli.execute_agent()
+            self.eoas_cli.execute_agent(resource_id=res_id)
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("Underlying method not yet implemented")
     def test_set_agent_param(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
         with self.assertRaises(IonException):
-            self.eoas_cli.set_agent_param(name="param", value="value")
+            self.eoas_cli.set_agent_param(resource_id=res_id, name="param", value="value")
 
-    @unittest.skip("Underlying method not yet implemented")
+#    @unittest.skip("Underlying method not yet implemented")
     def test_get_agent_param(self):
-        log.debug("test_spawn_worker with ds_id: %s" % self.ncom_ds_id)
-        proc_name, pid, queue_id = self.eoas_cli.spawn_worker(self.ncom_ds_id)
-        log.debug("proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
+        res_id = self.ncom_ds_id
+
+        log.debug("test_get_worker with res_id: %s" % res_id)
+        res = self.eoas_cli.get_worker(res_id)
 
         with self.assertRaises(IonException):
-            self.eoas_cli.get_agent_param(name="param")
+            self.eoas_cli.get_agent_param(resource_id=res_id, name="param")

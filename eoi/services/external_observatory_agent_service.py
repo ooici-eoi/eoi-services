@@ -12,11 +12,10 @@ __licence__ = 'Apache 2.0'
 
 from mock import Mock
 from pyon.net.endpoint import ProcessRPCClient
-from pyon.public import log, IonObject, RT, AT
-from pyon.core.exception import NotFound, IonException
-from pyon.util.containers import DotDict
+from pyon.public import log
+from pyon.core.exception import IonException
 from interface.services.eoi.iexternal_observatory_agent_service import BaseExternalObservatoryAgentService
-from interface.messages import external_observatory_agent_execute_in
+from interface.messages import external_observatory_agent_execute_in, external_observatory_agent_get_capabilities_in
 
 class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 
@@ -37,7 +36,7 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 #        self.clients.process_dispatcher_service.delete_process_definition.return_value = True
 
 
-    def spawn_worker(self, resource_id=''):
+    def _spawn_worker(self, resource_id=''):
         '''
         Steps:
          1. check (with RR? with CEI??) to see if there is already a worker process for the resource_id (ExternalDataset Resource)
@@ -48,7 +47,12 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
         log.debug("EOAS: spawn_worker")
         proc_name = resource_id+'_worker'
         log.debug("Process Name: %s" % proc_name)
-        #todo: check if a process with this proc_name already exists, return that process
+
+        # If a worker already exists for this process, return that
+        if resource_id in self._worker_clients:
+            (rpc_cli, proc_name, pid, queue_id) = self._worker_clients[resource_id]
+            log.debug("Found worker process for resource_id=%s ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (resource_id, proc_name, pid, queue_id))
+            return True
 
 #        config = {'agent':{'dataset_id': resource_id}}
         config = {}
@@ -56,44 +60,51 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
         config['process']['eoa']={'dataset_id':resource_id}
 
         pid = self.container.spawn_process(name=proc_name, module='eoi.agent.external_observatory_agent', cls='ExternalObservatoryAgent', config=config)
-#
-#        return pid
         queue_id = "%s.%s" % (self.container.id, pid)
+        log.debug("Spawned worker process for resource_id=%s ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (resource_id, proc_name, pid, queue_id))
 
-        self._worker_clients[resource_id] = ProcessRPCClient(name=queue_id, process=self)
+        self._worker_clients[resource_id] = (ProcessRPCClient(name=queue_id, process=self), proc_name, pid, queue_id)
 
-        return proc_name, pid, queue_id
+        return True
 
     def get_worker(self, resource_id=''):
-        raise IonException
+        return self._spawn_worker(resource_id=resource_id)
 
-    def get_capabilities(self, capability_types=[]):
-        raise IonException
-
-    def execute(self, command=None):
-        if command is not None:
-            rid = command.kwargs['ds_id']
-            log.debug("execute: res_id=%s" % rid)
-            cli = self._worker_clients[rid]
+    def execute(self, resource_id="", command=None):
+        if resource_id:
+            cli, proc_name, pid, queue_id = self._worker_clients[resource_id]
             if cli is not None:
-                exe = external_observatory_agent_execute_in(command=command)
+                exe = external_observatory_agent_execute_in(resource_id=resource_id, command=command)
                 log.debug("execute: eoa_execute_in=%s" % exe)
                 return cli.request(exe, op='execute')
+            else:
+                raise IonException("No worker for resource_id=%s" % resource_id)
         else:
-            raise IonException
+            raise IonException("Resource ID cannot be empty or None")
 
+    def get_capabilities(self, resource_id="", capability_types=[]):
+        if resource_id:
+            cli, proc_name, pid, queue_id = self._worker_clients[resource_id]
+            if cli is not None:
+                exe = external_observatory_agent_get_capabilities_in(resource_id=resource_id, capability_types=capability_types)
+                log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
+                return cli.request(exe, op='get_capabilities')
+            else:
+                raise IonException("No worker for resource_id=%s" % resource_id)
+        else:
+            raise IonException("Resource ID cannot be empty or None")
 
-    def set_param(self, name='', value=''):
+    def set_param(self, resource_id="", name='', value=''):
         raise IonException
 
-    def get_param(self, name=''):
+    def get_param(self, resource_id="", name=''):
         raise IonException
 
-    def execute_agent(self, command={}):
+    def execute_agent(self, resource_id="", command={}):
         raise IonException
 
-    def set_agent_param(self, name='', value=''):
+    def set_agent_param(self, resource_id="", name='', value=''):
         raise IonException
 
-    def get_agent_param(self, name=''):
+    def get_agent_param(self, resource_id="", name=''):
         raise IonException
