@@ -3,7 +3,7 @@
 __author__ = 'cmueller'
 
 from pyon.public import log
-from interface.objects import DatasetDescriptionDataSamplingEnum
+from interface.objects import DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum
 from eoi.agent.handler.base_external_data_handler import *
 from eoi.agent.utils import ArrayIterator
 from netCDF4 import Dataset
@@ -142,11 +142,16 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         # compare the last_signature to the current dataset _signature
         dcr = self.compare(last_signature)
-        dcr_result = dcr.get_result()
-        if dcr_result[0] in [dcr.EQUAL, dcr.MOD_GATT]:
-            return False
+        result = True
+        for x in dcr:
+            if x.difference == CompareResultEnum.EQUAL or x.difference == CompareResultEnum.MOD_GATT:
+                result = False
+        #dcr_result = dcr.get_result()
+        #if dcr_result[0] in [dcr.EQUAL, dcr.MOD_GATT]:
+        #    return False
 
-        return True
+        #return True
+        return result
 
     def get_signature(self, recalculate=False, **kwargs):
         """
@@ -257,7 +262,9 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         my_sig = self.get_signature(recalculate=True)
 
-        dcr = DatasetComparisonResult()
+        #dcr = DatasetComparisonResult()
+
+        result = []
 
         if my_sig[0] != data_signature[0]:
             #TODO: make info
@@ -272,13 +279,19 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Dimension '%s' does not exist in 2nd dataset" % dk
-                        dcr.add_dim(dk, True)
+                        res = CompareResult()
+                        res.field_name = dk
+                        res.difference = CompareResultEnum.NEW_DIM
+                        result.append(res)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Dimension '%s' differs" % dk
-                        dcr.add_dim(dk)
+                        res = CompareResult()
+                        res.field_name = dk
+                        res.difference = CompareResultEnum.MOD_DIM
+                        result.append(res)
                     else:
                         #TODO: make debug
 #                        print "====> Dimension '%s' is equal" % dk
@@ -297,13 +310,19 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
-                        dcr.add_gbl_attr(gk, True)
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.NEW_GATT
+                        result.append(res)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Global Attribute '%s' differs" % gk
-                        dcr.add_gbl_attr(gk)
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.MOD_GATT
+                        result.append(res)
                     else:
                         #TODO: make debug
 #                        print "====> Global Attribute '%s' is equal" % gk
@@ -323,11 +342,18 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Variable '%s' does not exist in 2nd dataset" % vk
-                        continue
+                        res = CompareResult()
+                        res.field_name = vk
+                        res.difference = CompareResultEnum.NEW_VAR
+                        result.append(res)
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Variable '%s' differ" % vk
+                        res = CompareResult()
+                        res.field_name = vk
+                        res.difference = CompareResultEnum.MOD_VAR
+                        result.append(res)
                         for vak in my_sig[1]["vars"][1][vk][1]:
                             va1 = my_sig[1]["vars"][1][vk][1][vak]
                             if vak in data_signature[1]["vars"][1][vk][1]:
@@ -335,13 +361,19 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                             else:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
-                                dcr.add_var_attr(vak, True)
+                                res = CompareResult()
+                                res.field_name = vak
+                                res.difference = CompareResultEnum.NEW_VARATT
+                                result.append(res)
                                 continue
 
                             if va1 != va2:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' differs" % vak
-                                dcr.add_var_attr(vak)
+                                res = CompareResult()
+                                res.field_name = bak
+                                res.difference = CompareResultEnum.MOD_VARATT
+                                result.append(res)
                             else:
                                 #TODO: make debug
 #                                print "======> Variable Attribute '%s' is equal" % vak
@@ -353,8 +385,12 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         else:
             #TODO: make debug
             print "==> Datasets are equal"
+            res = CompareResult()
+            res.field_name = ""
+            res.difference = CompareResultEnum.EQUAL
+            result.append(res)
 
-        return dcr
+        return result
 
     def find_time_axis(self):
         if self._tvar is None:

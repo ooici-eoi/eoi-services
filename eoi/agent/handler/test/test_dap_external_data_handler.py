@@ -8,7 +8,7 @@ from nose.plugins.attrib import attr
 from eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
 from eoi.agent.handler.base_external_data_handler import DataAcquisitionError, InstantiationError
 from pyon.util.unit_test import PyonTestCase
-from interface.objects import ExternalDataset, DataSource, DatasetDescription, UpdateDescription, ContactInformation, ExternalDataRequest, DatasetDescriptionDataSamplingEnum
+from interface.objects import ExternalDataset, DataSource, DatasetDescription, UpdateDescription, ContactInformation, ExternalDataRequest, DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum
 import unittest
 
 
@@ -310,7 +310,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
 
         dcr = dsh_1.compare(dsh_2.get_signature())
-        self.assertTrue(dcr.get_result()[0], "EQUAL")
+        for x in dcr:
+            self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
     @unittest.skip("Nothing to test yet")
     def test_compare_data_equal_first_last(self):
@@ -329,7 +330,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
 
         dcr = dsh_1.compare(dsh_2.get_signature())
-        self.assertTrue(dcr.get_result()[0], "MOD_DATA")
+        for x in dcr:
+            self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
 #    @unittest.skip("")
     def test_compare_data_different_full(self):
@@ -340,7 +342,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
 
         dcr = dsh_1.compare(dsh_2.get_signature())
-        self.assertTrue(dcr.get_result()[0], "MOD_DATA")
+        for x in dcr:
+            self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
     #TODO: Make test for shotgun sampling (must implement support for shotgun sampling first)
 
@@ -351,7 +354,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2 = self._dsh_list["DS_GLOBAL_ATT_CHANGED"][0]
 
         dcr = dsh_1.compare(dsh_2.get_signature())
-        self.assertTrue(dcr.get_result()[0], "MOD_GBL_ATTS")
+        for x in dcr:
+            self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
 
 #    @unittest.skip("")
     def test_compare_dim_size_changed(self):
@@ -360,7 +364,8 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2 = self._dsh_list["DS_DIM_SIZE_CHANGED"][0]
 
         dcr = dsh_1.compare(dsh_2.get_signature())
-        self.assertTrue(dcr.get_result()[0], "MOD_DIMS")
+        for x in dcr:
+            self.assertEqual(x.difference, CompareResultEnum.MOD_DIM)
 
 #    @unittest.skip("")
     def test_get_attributes_global(self):

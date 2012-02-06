@@ -3,21 +3,11 @@
 __author__ = 'tgiguere'
 
 from pyon.public import log
-from interface.objects import DatasetDescriptionDataSamplingEnum
+from interface.objects import DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum, Variable
 from eoi.agent.handler.base_external_data_handler import *
 from eoi.agent.utils import ArrayIterator
 import numpy
 import hashlib
-
-class Variable:
-    column_name = ''
-    long_name = ''
-    units = ''
-
-    def __init__(self, column_name='', long_name='', units=''):
-        column_name = column_name
-        long_name = long_name
-        units = units
 
 
 class HfrRadialDataHandler(BaseExternalDataHandler):
@@ -135,10 +125,11 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
 
         vars = self._variables
 
-        for var in self._variables:
-            if var.column_name == var_name:
-                vars = var
-                break
+        if not var_name is None:
+            for var in self._variables:
+                if var.column_name == var_name:
+                    vars = [var]
+                    break
 
         for vn in vars:
             var = self._data_array[vn.column_name]
@@ -190,7 +181,7 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
         Calculate the _signature of the dataset
         """
 
-        data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        data_sampling = self._ext_dataset_res.dataset_description.data_sampling
 
         if recalculate:
             self._signature = None
@@ -206,6 +197,7 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
         #        sha_vars.update(str(self._ds))
             var = self._data_array[vk.column_name]
             #            sha_vars.update(str(var)) # includes the "current size"
+
             var_sha = hashlib.sha1()
             var_atts = {}
             var_atts['units'] = hashlib.sha1(str(vk.units)).hexdigest()
@@ -277,8 +269,7 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
     def compare(self, data_signature):
 
         my_sig = self.get_signature(recalculate=True)
-
-        dcr = DatasetComparisonResult()
+        result = []
 
         if my_sig[0] != data_signature[0]:
             #TODO: make info
@@ -289,18 +280,55 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
                 print "==!> Global Attributes differ"
                 for gk in my_sig[1]["gbl_atts"][1]:
                     v1 = my_sig[1]["gbl_atts"][1][gk]
+
                     if gk in data_signature[1]["gbl_atts"][1]:
                         v2 = data_signature[1]["gbl_atts"][1][gk]
                     else:
                         #TODO: make info
                         print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
-                        dcr.add_gbl_attr(gk, True)
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.NEW_GATT
+                        result.append(res)
+                        #dcr.add_gbl_attr(gk, True)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Global Attribute '%s' differs" % gk
-                        dcr.add_gbl_attr(gk)
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.MOD_GATT
+                        result.append(res)
+                        #dcr.add_gbl_attr(gk)
+                    else:
+                    #TODO: make debug
+                    #                        print "====> Global Attribute '%s' is equal" % gk
+                        continue
+
+                for gk in data_signature[1]["gbl_atts"][1]:
+                    v1 = data_signature[1]["gbl_atts"][1][gk]
+
+                    if gk in my_sig[1]["gbl_atts"][1]:
+                        v2 = my_sig[1]["gbl_atts"][1][gk]
+                    else:
+                        #TODO: make info
+                        print "===!> Global Attribute '%s' does not exist in 1st dataset" % gk
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.NEW_GATT
+                        result.append(res)
+                        #dcr.add_gbl_attr(gk, True)
+                        continue
+
+                    if v1 != v2:
+                        #TODO: make info
+                        print "===!> Global Attribute '%s' differs" % gk
+                        res = CompareResult()
+                        res.field_name = gk
+                        res.difference = CompareResultEnum.MOD_GATT
+                        result.append(res)
+                        #dcr.add_gbl_attr(gk)
                     else:
                     #TODO: make debug
                     #                        print "====> Global Attribute '%s' is equal" % gk
@@ -320,11 +348,19 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
                     else:
                         #TODO: make info
                         print "===!> Variable '%s' does not exist in 2nd dataset" % vk
+                        res = CompareResult()
+                        res.field_name = vk
+                        res.difference = CompareResultEnum.NEW_GATT
+                        result.append(res)
                         continue
 
                     if v1 != v2:
                         #TODO: make info
                         print "===!> Variable '%s' differ" % vk
+                        res = CompareResult()
+                        res.field_name = vk
+                        res.difference = CompareResultEnum.MOD_VAR
+                        result.append(res)
                         for vak in my_sig[1]["vars"][1][vk][1]:
                             va1 = my_sig[1]["vars"][1][vk][1][vak]
                             if vak in data_signature[1]["vars"][1][vk][1]:
@@ -332,13 +368,21 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
                             else:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
-                                dcr.add_var_attr(vak, True)
+                                res = CompareResult()
+                                res.field_name = vak
+                                res.difference = CompareResultEnum.NEW_VARATT
+                                result.append(res)
+                                #dcr.add_var_attr(vak, True)
                                 continue
 
                             if va1 != va2:
                                 #TODO: make info
                                 print "====!> Variable Attribute '%s' differs" % vak
-                                dcr.add_var_attr(vak)
+                                res = CompareResult()
+                                res.field_name = vak
+                                res.difference = CompareResultEnum.MOD_VARATT
+                                result.append(res)
+                                #dcr.add_var_attr(vak)
                             else:
                             #TODO: make debug
                             #                                print "======> Variable Attribute '%s' is equal" % vak
@@ -349,64 +393,9 @@ class HfrRadialDataHandler(BaseExternalDataHandler):
 
         else:
             #TODO: make debug
-            print "==> Datasets are equal"
+            res = CompareResult()
+            res.field_name = ""
+            res.difference = CompareResultEnum.EQUAL
+            result.append(res)
 
-        return dcr
-
-
-class DatasetComparisonResult():
-
-    EQUAL = "EQUAL"
-    NEW_DIM = "NEW_DIM"
-    MOD_DIM = "MOD_DIM"
-    NEW_GATT = "NEW_GATT"
-    MOD_GATT = "MOD_GATT"
-    NEW_VARATT = "NEW_VARATT"
-    MOD_VARATT = "MOD_VARATT"
-    MOD_DATA = "MOD_DATA"
-
-    def __init__(self):
-        self.new_dims = []
-        self.mod_dims = []
-        self.new_gatts = []
-        self.mod_gatts = []
-        self.new_varatts = []
-        self.mod_varatts = []
-        self.mod_data = []
-
-
-    def add_dim(self, dim_name, is_new=False):
-        if is_new:
-            self.new_dims.append(dim_name)
-        else:
-            self.mod_dims.append(dim_name)
-
-    def add_gbl_attr(self, gbl_attr_name, is_new=False):
-        if is_new:
-            self.new_gatts.append(gbl_attr_name)
-        else:
-            self.mod_gatts.append(gbl_attr_name)
-
-    def add_var_attr(self, var_attr_name, is_new=False):
-        if is_new:
-            self.new_varatts.append(var_attr_name)
-        else:
-            self.mod_varatts.append(var_attr_name)
-
-    def get_result(self):
-        if self.new_dims:
-            return self.NEW_DIM, self.new_dims
-        elif self.mod_dims:
-            return self.MOD_DIM, self.mod_dims
-        elif self.mod_data:
-            return self.MOD_DATA, self.mod_data
-        elif self.new_varatts:
-            return self.NEW_VARATT, self.new_varatts
-        elif self.mod_varatts:
-            return self.MOD_VARATT, self.mod_varatts
-        elif self.new_gatts:
-            return self.NEW_GATT, self.new_gatts
-        elif self.mod_gatts:
-            return self.MOD_GATT, self.mod_gatts
-        else:
-            return self.EQUAL, []
+        return result
