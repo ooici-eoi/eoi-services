@@ -3,7 +3,7 @@
 __author__ = 'cmueller'
 
 from pyon.public import log
-from interface.objects import DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum
+from interface.objects import DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum, Variable, Attribute, Dimension
 from eoi.agent.handler.base_external_data_handler import *
 from eoi.agent.utils import ArrayIterator
 from netCDF4 import Dataset
@@ -13,10 +13,10 @@ import numpy
 
 class DapExternalDataHandler(BaseExternalDataHandler):
 
-    _ds_url = None
-    _ds = None
-    _cdms_ds = None
-    _tvar = None
+#    _ds_url = None
+#    _ds = None
+#    _cdms_ds = None
+#    _tvar = None
 
     def __init__(self, data_provider=None, data_source=None, ext_dataset=None, *args, **kwargs):
         BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, *args, **kwargs)
@@ -31,6 +31,48 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         log.debug("Dataset URL: %s" % self._ds_url)
         self._ds = Dataset(self._ds_url)
+        self._load_global_attributes()
+        self._load_dimensions()
+        self._load_variables()
+        self._cdms_ds = None
+        self._tvar = None
+
+    def _load_variables(self):
+        self._variables = []
+        for vn in self._ds.variables.keys():
+            var = self._ds.variables[vn]
+            newvar = Variable()
+            newvar.key = vn
+            newvar.column_name = vn
+            newvar.attributes = []
+            for ak in var.ncattrs():
+                att = var.getncattr(ak)
+                if ak == 'units':
+                    newvar.units = att
+                attr = Attribute()
+                attr.name = ak
+                attr.value = att
+                newvar.attributes.append(attr)
+            self._variables.append(newvar)
+
+    def _load_dimensions(self):
+        self._dimensions = []
+        for dk in self._ds.dimensions:
+            dim = self._ds.dimensions[dk]
+            newdim = Dimension()
+            newdim.name = dk
+            newdim.size = len(dim)
+            newdim.isunlimited = dim.isunlimited()
+            self._dimensions.append(newdim)
+
+    def _load_global_attributes(self):
+        self._global_attributes = []
+        for gk in self._ds.ncattrs():
+            gbl = self._ds.getncattr(gk)
+            attr = Attribute()
+            attr.name = gk
+            attr.value = gbl
+            self._global_attributes.append(attr)
 
     def close(self):
         log.debug("Close the local Dataset object")
@@ -48,6 +90,10 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         
         return dict((a, getattr(var, a)) for a in var.ncattrs())
 
+    def get_variable_data(self, key=''):
+        if key in self._ds.variables:
+            return self._ds.variables[key]
+
     def acquire_data(self, var_name=None, slice_=()):
         if var_name is None:
             vars = self._ds.variables.keys()
@@ -57,7 +103,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         if not isinstance(slice_, tuple): slice_ = (slice_,)
 
         for vn in vars:
-            var=self._ds.variables[vn]
+            var = self._ds.variables[vn]
 
             ndims = len(var.shape)
             # Ensure the slice_ is the appropriate length
@@ -134,264 +180,6 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return name, data, typecode, dims, attrs
 
-    def has_new_data(self, **kwargs):
-        last_signature = self._ext_dataset_res.update_description.last_signature
-
-        if last_signature is None or last_signature == "":
-            return True
-
-        # compare the last_signature to the current dataset _signature
-        dcr = self.compare(last_signature)
-        result = True
-        for x in dcr:
-            if x.difference == CompareResultEnum.EQUAL or x.difference == CompareResultEnum.MOD_GATT:
-                result = False
-        #dcr_result = dcr.get_result()
-        #if dcr_result[0] in [dcr.EQUAL, dcr.MOD_GATT]:
-        #    return False
-
-        #return True
-        return result
-
-    def get_signature(self, recalculate=False, **kwargs):
-        """
-        Calculate the _signature of the dataset
-        """
-#        if self._dataset_desc_obj.data_sampling is None or self._dataset_desc_obj.data_sampling == "":
-#            data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
-#        else:
-#            data_sampling = self._dataset_desc_obj.data_sampling
-
-        data_sampling = self._ext_dataset_res.dataset_description.data_sampling
-
-        if recalculate:
-            self._signature = None
-
-        if self._signature is not None:
-            return self._signature
-
-        ret = {}
-        # sha for time values
-#        _tvar=self.find_time_axis()
-#        if _tvar is not None:
-#            sha_time=hashlib.sha1()
-#            sha_time.update(str(_tvar[:]))
-#            ret['times']=sha_time.hexdigest()
-#        else:
-#            ret['times']=None
-
-        # sha for variables
-        var_map = {}
-        for vk in self._ds.variables:
-        #        sha_vars.update(str(self._ds))
-            var = self._ds.variables[vk]
-            #            sha_vars.update(str(var)) # includes the "current size"
-            var_sha = hashlib.sha1()
-            var_atts = {}
-            for ak in var.ncattrs():
-                att = var.getncattr(ak)
-                var_atts[ak] = hashlib.sha1(str(att)).hexdigest()
-                var_sha.update(var_atts[ak])
-
-            if data_sampling is DatasetDescriptionDataSamplingEnum.FIRST_LAST:
-                slice_first = []
-                slice_last = []
-                for s in var.shape:
-                    # get the first...where outer dims == 0 and the innermost == 1
-                    slice_first.append(slice(0, 1))
-                    # get the last...where outer dims == max for dim
-                    slice_last.append(slice(s-1,s))
-
-                dat_f = var[slice_first]
-                dat_l = var[slice_last]
-
-                # add the string data arrays into the sha
-                var_sha.update(str(dat_f))
-                var_sha.update(str(dat_l))
-
-            elif data_sampling is DatasetDescriptionDataSamplingEnum.FULL:
-                var_sha.update(str(var[:]))
-                pass
-            elif data_sampling is DatasetDescriptionDataSamplingEnum.SHOTGUN:
-                shotgun_count = kwargs[DatasetDescriptionDataSamplingEnum.SHOTGUN_COUNT] or 10
-                pass
-            else:
-                pass
-
-            var_map[vk] = var_sha.hexdigest(), var_atts
-
-        sha_vars = hashlib.sha1()
-        for key in var_map:
-            sha_vars.update(var_map[key][0])
-
-        ret["vars"] = sha_vars.hexdigest(), var_map
-
-        # sha for dimensions
-        dim_map = {}
-        for dk in self._ds.dimensions:
-            dim = self._ds.dimensions[dk]
-            dim_map[dk] = hashlib.sha1(str(dim)).hexdigest()
-
-        sha_dim = hashlib.sha1()
-        for key in dim_map:
-            sha_dim.update(dim_map[key])
-
-        ret["dims"] = sha_dim.hexdigest(), dim_map
-
-        # sha for globals
-        gbl_map = {}
-        for gk in self._ds.ncattrs():
-            gbl = self._ds.getncattr(gk)
-            gbl_map[gk] = hashlib.sha1(str(gbl)).hexdigest()
-
-        sha_gbl = hashlib.sha1()
-        for key in gbl_map:
-            sha_gbl.update(gbl_map[key])
-
-        ret["gbl_atts"] = sha_gbl.hexdigest(), gbl_map
-
-        sha_full = hashlib.sha1()
-        for key in ret:
-            if ret[key] is not None:
-                sha_full.update(ret[key][0])
-
-        self._signature = sha_full.hexdigest(), ret
-        return self._signature
-
-    def compare(self, data_signature):
-
-        my_sig = self.get_signature(recalculate=True)
-
-        #dcr = DatasetComparisonResult()
-
-        result = []
-
-        if my_sig[0] != data_signature[0]:
-            #TODO: make info
-            print "=!> Full signatures differ"
-            if my_sig[1]["dims"][0] != data_signature[1]["dims"][0]:
-                #TODO: make info
-                print "==!> Dimensions differ"
-                for dk in my_sig[1]["dims"][1]:
-                    v1 = my_sig[1]["dims"][1][dk]
-                    if dk in data_signature[1]["dims"][1]:
-                        v2 = data_signature[1]["dims"][1][dk]
-                    else:
-                        #TODO: make info
-                        print "===!> Dimension '%s' does not exist in 2nd dataset" % dk
-                        res = CompareResult()
-                        res.field_name = dk
-                        res.difference = CompareResultEnum.NEW_DIM
-                        result.append(res)
-                        continue
-
-                    if v1 != v2:
-                        #TODO: make info
-                        print "===!> Dimension '%s' differs" % dk
-                        res = CompareResult()
-                        res.field_name = dk
-                        res.difference = CompareResultEnum.MOD_DIM
-                        result.append(res)
-                    else:
-                        #TODO: make debug
-#                        print "====> Dimension '%s' is equal" % dk
-                        continue
-            else:
-                #TODO: make info
-                print "===> Dimensions are equal"
-
-            if my_sig[1]["gbl_atts"][0] != data_signature[1]["gbl_atts"][0]:
-                #TODO: make info
-                print "==!> Global Attributes differ"
-                for gk in my_sig[1]["gbl_atts"][1]:
-                    v1 = my_sig[1]["gbl_atts"][1][gk]
-                    if gk in data_signature[1]["gbl_atts"][1]:
-                        v2 = data_signature[1]["gbl_atts"][1][gk]
-                    else:
-                        #TODO: make info
-                        print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
-                        res = CompareResult()
-                        res.field_name = gk
-                        res.difference = CompareResultEnum.NEW_GATT
-                        result.append(res)
-                        continue
-
-                    if v1 != v2:
-                        #TODO: make info
-                        print "===!> Global Attribute '%s' differs" % gk
-                        res = CompareResult()
-                        res.field_name = gk
-                        res.difference = CompareResultEnum.MOD_GATT
-                        result.append(res)
-                    else:
-                        #TODO: make debug
-#                        print "====> Global Attribute '%s' is equal" % gk
-                        continue
-                        
-            else:
-                #TODO: make info
-                print "===> Global Attributes are equal"
-
-            if my_sig[1]["vars"][0] != data_signature[1]["vars"][0]:
-                #TODO: make info
-                print "==!> Variable attributes differ"
-                for vk in my_sig[1]["vars"][1]:
-                    v1 = my_sig[1]["vars"][1][vk][0]
-                    if vk in data_signature[1]["vars"][1]:
-                        v2 = data_signature[1]["vars"][1][vk][0]
-                    else:
-                        #TODO: make info
-                        print "===!> Variable '%s' does not exist in 2nd dataset" % vk
-                        res = CompareResult()
-                        res.field_name = vk
-                        res.difference = CompareResultEnum.NEW_VAR
-                        result.append(res)
-
-                    if v1 != v2:
-                        #TODO: make info
-                        print "===!> Variable '%s' differ" % vk
-                        res = CompareResult()
-                        res.field_name = vk
-                        res.difference = CompareResultEnum.MOD_VAR
-                        result.append(res)
-                        for vak in my_sig[1]["vars"][1][vk][1]:
-                            va1 = my_sig[1]["vars"][1][vk][1][vak]
-                            if vak in data_signature[1]["vars"][1][vk][1]:
-                                va2 = data_signature[1]["vars"][1][vk][1][vak]
-                            else:
-                                #TODO: make info
-                                print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
-                                res = CompareResult()
-                                res.field_name = vak
-                                res.difference = CompareResultEnum.NEW_VARATT
-                                result.append(res)
-                                continue
-
-                            if va1 != va2:
-                                #TODO: make info
-                                print "====!> Variable Attribute '%s' differs" % vak
-                                res = CompareResult()
-                                res.field_name = bak
-                                res.difference = CompareResultEnum.MOD_VARATT
-                                result.append(res)
-                            else:
-                                #TODO: make debug
-#                                print "======> Variable Attribute '%s' is equal" % vak
-                                continue
-            else:
-                #TODO: make info
-                print "===> Variable attributes are equal"
-
-        else:
-            #TODO: make debug
-            print "==> Datasets are equal"
-            res = CompareResult()
-            res.field_name = ""
-            res.difference = CompareResultEnum.EQUAL
-            result.append(res)
-
-        return result
-
     def find_time_axis(self):
         if self._tvar is None:
             tdim = self._ext_dataset_res.dataset_description.parameters["temporal_dimension"]
@@ -465,171 +253,3 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     def __repr__(self):
 #        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self._ds.keys())
         return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self._ds, str(self.find_time_axis()), self._pprint_signature())
-
-#    def acquire_data_old(self, request=None, **kwargs):
-#        """
-#        For testing only at this point.  Called from examples/eoi/func_tst_update.py
-#        """
-#        td = timedelta(hours=-1)
-#        edt = datetime.utcnow()
-#        sdt = edt + td
-#
-#        if request is not None:
-#            if "start_time" in request:
-#                sdt = request.start_time
-#            if "end_time" in request:
-#                edt = request.end_time
-#            if "lower_left_x" in request.bbox:
-#                lower_left_x = request.bbox["lower_left_x"]
-#            if "lower_left_y" in request.bbox:
-#                lower_left_y = request.bbox["lower_left_y"]
-#            if "upper_right_x" in request.bbox:
-#                upper_right_x = request.bbox["upper_right_x"]
-#            if "upper_right_y" in request.bbox:
-#                upper_right_y = request.bbox["upper_right_y"]
-#
-#        tvar = self._ds.variables[self._dataset_desc_obj.temporal_dimension]
-#        tindices = date2index([sdt, edt], tvar, 'standard', 'nearest')
-#        if tindices[0] == tindices[1]:
-#            # add one to the end index to ensure we get everything
-#            tindices[1] += 1
-#
-#        print ">>> tindices [start end]: %s" % tindices
-#
-#        dims = self._ds.dimensions.items()
-#
-#        ret = {}
-#        #        ret["times"] = _tvar[sti:eti]
-#        for vk in self._ds.variables:
-#            print "***"
-#            print vk
-#            var = self._ds.variables[vk]
-#            t_idx = -1
-#            lon_idx = -1
-#            lat_idx = -1
-#            if self._dataset_desc_obj.temporal_dimension in var.dimensions:
-#                t_idx = var.dimensions.index(self._dataset_desc_obj.temporal_dimension)
-#            if self._dataset_desc_obj.zonal_dimension in var.dimensions:
-#                lon_idx = var.dimensions.index(self._dataset_desc_obj.zonal_dimension)
-#            if self._dataset_desc_obj.meridional_dimension in var.dimensions:
-#                lat_idx = var.dimensions.index(self._dataset_desc_obj.meridional_dimension)
-#
-#            lst = []
-#            for i in range(len(var.dimensions)):
-#                if i == t_idx:
-#                    lst.append(slice(tindices[0], tindices[1]))
-#                elif i == lon_idx:
-#                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.zonal_dimension >= lower_left_x,
-#                        self._dataset_desc_obj.zonal_dimension <= upper_right_x)))
-#                elif i == lat_idx:
-#                    lst.append(slice(numpy.logical_and(self._dataset_desc_obj.meridional_dimension >= lower_left_y,
-#                        self._dataset_desc_obj.meridional_dimension <= upper_right_y)))
-#                else:
-#                    lst.append(slice(0, len(dims[i][1])))
-#            print lst
-#            print "==="
-#            tpl = tuple(lst)
-#            ret[vk] = tpl, var[tpl]
-#            print ret[vk]
-#            print "***"
-#
-#        #                if idx == 0:
-#        #                    ret[vk] = var[sti:eti]
-#        #                elif idx == 1:
-#        #                    ret[vk] = var[:, sti:eti]
-#        #                elif idx == 2:
-#        #                    ret[vk] = var[:, :, sti:eti]
-#        #                else:
-#        #                    ret[vk] = "Temporal index > 2, WTF"
-#        #            else:
-#        #                ret[vk] = "Non-temporal Dimension ==> ignore for now"
-#        #                continue
-#
-#        return ret
-
-class DatasetComparisonResult():
-
-    EQUAL = "EQUAL"
-    NEW_DIM = "NEW_DIM"
-    MOD_DIM = "MOD_DIM"
-    NEW_GATT = "NEW_GATT"
-    MOD_GATT = "MOD_GATT"
-    NEW_VARATT = "NEW_VARATT"
-    MOD_VARATT = "MOD_VARATT"
-    MOD_DATA = "MOD_DATA"
-
-    def __init__(self):
-        self.new_dims = []
-        self.mod_dims = []
-        self.new_gatts = []
-        self.mod_gatts = []
-        self.new_varatts = []
-        self.mod_varatts = []
-        self.mod_data = []
-
-
-    def add_dim(self, dim_name, is_new=False):
-        if is_new:
-            self.new_dims.append(dim_name)
-        else:
-            self.mod_dims.append(dim_name)
-
-    def add_gbl_attr(self, gbl_attr_name, is_new=False):
-        if is_new:
-            self.new_gatts.append(gbl_attr_name)
-        else:
-            self.mod_gatts.append(gbl_attr_name)
-
-    def add_var_attr(self, var_attr_name, is_new=False):
-        if is_new:
-            self.new_varatts.append(var_attr_name)
-        else:
-            self.mod_varatts.append(var_attr_name)
-
-    def get_result(self):
-        if self.new_dims:
-            return self.NEW_DIM, self.new_dims
-        elif self.mod_dims:
-            return self.MOD_DIM, self.mod_dims
-        elif self.mod_data:
-            return self.MOD_DATA, self.mod_data
-        elif self.new_varatts:
-            return self.NEW_VARATT, self.new_varatts
-        elif self.mod_varatts:
-            return self.MOD_VARATT, self.mod_varatts
-        elif self.new_gatts:
-            return self.NEW_GATT, self.new_gatts
-        elif self.mod_gatts:
-            return self.MOD_GATT, self.mod_gatts
-        else:
-            return self.EQUAL, []
-
-
-#    def walk_dataset(self, top):
-#        values = top.group.values()
-#        yield values
-#        for value in values:
-#            for children in walk_dataset(value):
-#                yield children
-#
-#    def print_dataset_tree(self):
-#        if self._ds is None:
-#            return "Dataset is None"
-#
-#        print self._ds.path, self._ds
-#        for children in walk_dataset(self._ds):
-#            for child in children:
-#                print child.path, child
-
-#    def get_dataset_size(self):
-#        return self._ds
-#        return reduce(lambda x, y: x * self.calculate_data_size(y), self._ds.keys())
-
-#    def calculate_data_size(self, variable=None):
-#        if variable is None and self._ds is not None:
-#            variable = self._ds[self._ds.keys()[0]]
-#
-#        if type(variable) == pydap.model.GridType:
-#            return reduce(lambda x, y: x * y, variable.shape) * variable.type.size
-#        else:
-#            log.warn("variable is of unhandled type: %s" % type(variable))

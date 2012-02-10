@@ -100,3 +100,13 @@ class IExternalDataHandlerController(Interface):
         Closes any open network connections and releases any resources used by this DataHandler.
         This method is called when the ExternalAgent process is terminated and should completely clean-up anything in use by this DataHandler
         """
+
+    def scan():
+        """
+        Scans the dataset to get the list of parameters when registering a new datasource.
+        """
+
+    def get_variable_data(key=''):
+        """
+        Returns an array of the data referenced by a particular key
+        """

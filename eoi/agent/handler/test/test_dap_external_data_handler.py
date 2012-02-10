@@ -12,59 +12,60 @@ from interface.objects import ExternalDataset, DataSource, DatasetDescription, U
 import unittest
 
 
-@attr('UNIT', group='eoi-hdlr')
+@attr('UNIT', group='eoi')
 class TestDapExternalDataHandler(PyonTestCase):
 
-    _dsh_list = {}
-    _ds_base_sig = None
+    #_dsh_list = {}
+    #_ds_base_sig = None
     _ten_x_ten_x_ten = None
     _twelve_x_ten_x_ten = None
 
     def setUp(self):
-        self._ds_base_sig = ('0e0bd865d4cd42c840b55f273499f62e5c32d4ff',
-                                 {'dims': ('9e86329cc35148d33f94da5d9a45c4996b8ff756',
-                                               {u'lat': '17b0bff9fd5da05a17e27478f72d39216546eafa',
-                                                u'lon': 'f115170f91587fb723e33ac1564eb021615acfaa',
-                                                u'time': '165058f1f201a8e9e455687940ce890121dd7853'}),
+
+        self._ds_base_sig = ('c382af4cf317dafd1f4876632ea41675d3b94491',
+                                 {'dims': ('da7800cfdcc7dd9b040e706fd02ed840b7f0aaf3',
+                                    {u'lat': '4b9b90a092b2ba94a429a6b004354f7df8f01c83',
+                                     u'lon': 'd173e3813934f53a3d1e0bdbcc1a2c22f87da819',
+                                     u'time': '75183d41ece6086b7e0bdf69da8d4ba6038ad7aa'}),
                                   'gbl_atts': ('09a13128e45c6e1909c4b762bdd0d84b9736cfbe',
-                                                   {u'history': '70d1ff82dbc7cc7a0972f67ab75ce93a184f160f',
-                                                    u'creator': '3c5b4941b7b4594facec9eb943e4d3c5401d882a'}),
+                                    {u'history': '70d1ff82dbc7cc7a0972f67ab75ce93a184f160f',
+                                     u'creator': '3c5b4941b7b4594facec9eb943e4d3c5401d882a'}),
                                   'vars': ('cfd99a46e8d2bb7d290beb79808d995337b2265f',
-                                               {u'latitude': ('fa639066e2cbff9006c7abffce0b2f2d4be74a5f',
-                                                    {u'units': '84f9eb7a658bfac37e07152c3ea75548fee6f512',
-                                                     u'long_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed',
-                                                     u'standard_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed'}),
-                                                u'bytedata': ('c4efaeabdf390223c2ab090a6ed4228d56d21705',
-                                                    {u'units': '8cf1783fa99f62ca581f6fe8f3cd66b0f9ab9fc3',
-                                                     u'long_name': '43b5048d58f03a15ba415ae6bb986c592ac21d8f',
-                                                     u'standard_name': 'daf529a73101c2be626b99fc6938163e7a27620b'}),
-                                                u'shortdata': ('8233872bc0219895b8e4357eefd1b9b76e553e1f',
-                                                    {u'units': 'a0f4ea7d91495df92bbac2e2149dfb850fe81396',
-                                                     u'long_name': '8de90e7c61efae549eeffabb0a7dc7ec55ca2c14',
-                                                     u'standard_name': '9e32d15b246e504af33cd10eb2ad2222215746fc'}),
-                                                u'intdata': ('c3b88b83ca2d88d1a920c446bde84b6c4ea432cb',
-                                                    {u'units': '46f8ab7c0cff9df7cd124852e26022a6bf89e315',
-                                                     u'long_name': '789e7e9f23bda5cc8fcd5f68778f0a91baf44b6c',
-                                                     u'standard_name': '9e35a694eb0354c94b54f2d71f780e0007fa0a31'}),
-                                                u'floatdata': ('3d5d26c312e0a0f18c07ba48780cede9fe2a2124',
-                                                    {u'units': 'ee51183217c223eb1db757b4d9c3a411579b61c0',
-                                                     u'long_name': '003fa881fcb9241c326210094f6295c837309470',
-                                                     u'standard_name': 'c37c8fd2a2acf45d254c0aaf2fe984e5d0f25341'}),
-                                                u'doubledata': ('e30671e4f23c46537916f211c8c03d5021239197',
-                                                    {u'units': '4defa67e8d027b1d564101917f3af00f0ba4fcde',
-                                                    u'long_name': '9666f26ef1d4133286ac1720c23ab6d79e732a57',
-                                                    u'standard_name': '6915b14cc28d7c49e0226fb79d98502e97f6b97f'}),
-                                                u'longitude': ('4812c8a8a7814777a5bc9d8bcaa04a83e929deae',
-                                                    {u'units': 'ff371c19d6872ff49d09490ecbdffbe3e7af2be5',
-                                                     u'long_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0',
-                                                     u'standard_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0'}),
-                                                u'time': ('036112bc95c35ba8ccff3ae54d77e76c881ad1af',
-                                                    {u'comment': 'd4bd716c721dd666ab529575d2ccaea4f0867dd9',
-                                                     u'_FillValue': '7984b0a0e139cabadb5afc7756d473fb34d23819',
-                                                     u'long_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
-                                                     u'standard_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
-                                                     u'units': 'd779896565174fdacafb4c96fc70455a2ac7d826',
-                                                     u'calendar': '4a78d3cb314a4e97cfe37eda5781f60b87f6145e'})})})
+                                    {u'doubledata': ('e30671e4f23c46537916f211c8c03d5021239197',
+                                        {u'units': '4defa67e8d027b1d564101917f3af00f0ba4fcde',
+                                         u'long_name': '9666f26ef1d4133286ac1720c23ab6d79e732a57',
+                                         u'standard_name': '6915b14cc28d7c49e0226fb79d98502e97f6b97f'}),
+                                     u'bytedata': ('c4efaeabdf390223c2ab090a6ed4228d56d21705',
+                                        {u'units': '8cf1783fa99f62ca581f6fe8f3cd66b0f9ab9fc3',
+                                         u'long_name': '43b5048d58f03a15ba415ae6bb986c592ac21d8f',
+                                         u'standard_name': 'daf529a73101c2be626b99fc6938163e7a27620b'}),
+                                     u'floatdata': ('3d5d26c312e0a0f18c07ba48780cede9fe2a2124',
+                                        {u'units': 'ee51183217c223eb1db757b4d9c3a411579b61c0',
+                                         u'long_name': '003fa881fcb9241c326210094f6295c837309470',
+                                         u'standard_name': 'c37c8fd2a2acf45d254c0aaf2fe984e5d0f25341'}),
+                                     u'longitude': ('4812c8a8a7814777a5bc9d8bcaa04a83e929deae',
+                                        {u'units': 'ff371c19d6872ff49d09490ecbdffbe3e7af2be5',
+                                         u'long_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0',
+                                         u'standard_name': 'd2a773ae817d7d07c19d9e37be4e792cec37aff0'}),
+                                     u'time': ('036112bc95c35ba8ccff3ae54d77e76c881ad1af',
+                                        {u'comment': 'd4bd716c721dd666ab529575d2ccaea4f0867dd9',
+                                         u'_FillValue': '7984b0a0e139cabadb5afc7756d473fb34d23819',
+                                         u'long_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
+                                         u'standard_name': '714eea0f4c980736bde0065fe73f573487f08e3a',
+                                         u'units': 'd779896565174fdacafb4c96fc70455a2ac7d826',
+                                         u'calendar': '4a78d3cb314a4e97cfe37eda5781f60b87f6145e'}),
+                                     u'latitude': ('fa639066e2cbff9006c7abffce0b2f2d4be74a5f',
+                                        {u'units': '84f9eb7a658bfac37e07152c3ea75548fee6f512',
+                                         u'long_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed',
+                                         u'standard_name': '5fcccdcf1d079c4a85c92c6fe7c8d29a27e49bed'}),
+                                     u'intdata': ('c3b88b83ca2d88d1a920c446bde84b6c4ea432cb',
+                                        {u'units': '46f8ab7c0cff9df7cd124852e26022a6bf89e315',
+                                         u'long_name': '789e7e9f23bda5cc8fcd5f68778f0a91baf44b6c',
+                                         u'standard_name': '9e35a694eb0354c94b54f2d71f780e0007fa0a31'}),
+                                     u'shortdata': ('8233872bc0219895b8e4357eefd1b9b76e553e1f',
+                                        {u'units': 'a0f4ea7d91495df92bbac2e2149dfb850fe81396',
+                                         u'long_name': '8de90e7c61efae549eeffabb0a7dc7ec55ca2c14',
+                                         u'standard_name': '9e32d15b246e504af33cd10eb2ad2222215746fc'})})})
 
         self._ds1_repr = "\n>> ExternalDataProvider:\n" \
                          "None\n>> DataSource:\nNone\n***\n" \
@@ -257,7 +258,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
     #### Test Methods
 
-#    @unittest.skip("")
     def test_constructor(self):
         ext_ds = ExternalDataset(name="test", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
         ext_ds.dataset_description.parameters["dataset_path"] = self._dsh_list["DS_BASE"][1]
@@ -275,7 +275,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh2 = DapExternalDataHandler(data_source=dsrc, ext_dataset=ext_ds, BLOCK_SIZE=10)
         self.assertEqual(dsh2._block_size, 10)
 
-#    @unittest.skip("")
     def test_constructor_exception(self):
         with self.assertRaises(InstantiationError) as cm:
             obj = DapExternalDataHandler(ext_dataset=None)
@@ -283,13 +282,13 @@ class TestDapExternalDataHandler(PyonTestCase):
         ex = cm.exception
         self.assertEqual(ex.message, "Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
 
-#    @unittest.skip("")
+    #@unittest.skip("")
     def test_get_signature(self):
         dsh = self._dsh_list["DS_BASE"][0]
         ## Tests the case where the signature is force-recalculated
         signature = dsh.get_signature(recalculate=True)
         ## Uncomment this line when the guts of "get_signature" has changed to print the new "correct" value - replace "self._ds_base_sig" with the output
-#        raise StandardError(signature)
+
         self.assertEqual(signature, self._ds_base_sig)
 
         ## Tests the case where the signature has already been calculated
@@ -299,11 +298,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         signature = dsh.get_signature(recalculate=True)
         self.assertEqual(signature, self._ds_base_sig)
 
-#        dsh._dataset_desc_obj.data_sampling = ""
-#        signature = dsh.get_signature(recalculate=True)
-#        self.assertEqual(signature, self._ds_base_sig)
-
-#    @unittest.skip("")
     def test_compare_equal_no_data(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
@@ -321,7 +315,6 @@ class TestDapExternalDataHandler(PyonTestCase):
     def test_compare_data_equal_full(self):
         pass
 
-#    @unittest.skip("")
     def test_compare_data_different_first_last(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
         dsh_1._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
@@ -333,7 +326,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
-#    @unittest.skip("")
     def test_compare_data_different_full(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
         dsh_1._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
@@ -347,7 +339,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
     #TODO: Make test for shotgun sampling (must implement support for shotgun sampling first)
 
-#    @unittest.skip("")
     def test_compare_global_attribute_changed(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
@@ -357,7 +348,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
 
-#    @unittest.skip("")
     def test_compare_dim_size_changed(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
@@ -367,27 +357,24 @@ class TestDapExternalDataHandler(PyonTestCase):
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.MOD_DIM)
 
-#    @unittest.skip("")
     def test_get_attributes_global(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         atts = dsh_1.get_attributes()
         self.assertEqual(atts, {"creator": "ocean observing initiative", "history": "first history entry"})
 
-#    @unittest.skip("")
     def test_get_attributes_variable(self, scope="floatdata"):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         atts = dsh_1.get_attributes(scope=scope)
         self.assertEqual(atts, {"standard_name": "floats", "long_name": "float_data", "units": "flt"})
 
-#    @unittest.skip("")
+    @unittest.skip("")
     def test_base_handler_repr(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         self.assertEqual(str(dsh_1), self._ds1_repr)
 
-#    @unittest.skip("")
     def test_has_new_data_false(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
@@ -395,7 +382,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertFalse(dsh_1.has_new_data())
 
-#    @unittest.skip("")
     def test_has_new_data_true(self):
         dsh_1 = self._dsh_list["DS_ADDITIONAL_TIMES"][0]
 
@@ -403,7 +389,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertTrue(dsh_1.has_new_data())
 
-#    @unittest.skip("")
     def test_has_new_data_initial(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
@@ -575,7 +560,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         ex = cm.exception
         self.assertEqual(ex.message, "The name 'no_var_or_dim_with_this_name' does not appear to be available in the dataset, cannot acquire data")
 
-#    @unittest.skip("")
     def test_acquire_data_full(self):
         import numpy
         dsh_1 = self._dsh_list["DS_BASE"][0]
@@ -593,7 +577,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertTrue(len(locallist) == 0)
 
-#    @unittest.skip("")
     def test_acquire_data_float_by_9600(self):
         import numpy
         dsh_1 = self._dsh_list["DS_BASE"][0]
@@ -611,7 +594,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
     #TODO: Need many more acquire_data tests
 
-#    @unittest.skip("")
     def test_acquire_new_data(self):
         import numpy
         dsh_1 = self._dsh_list["DS_BASE"][0]
@@ -629,7 +611,6 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertTrue(len(locallist) == 0)
 
-#    @unittest.skip("")
     def test_find_time_axis_specified(self):
         import netCDF4
         dsh_1 = self._dsh_list["DS_BASE"][0]
@@ -637,7 +618,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         tvar = dsh_1.find_time_axis()
         self.assertTrue(isinstance(tvar, netCDF4.Variable))
 
-#    @unittest.skip("")
     def test_find_time_axis_specified_var_dim_differ(self):
         import netCDF4
         dsh_1 = self._dsh_list["DS_TIME_DIM_VAR_DIFFER"][0]
@@ -645,7 +625,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         tvar = dsh_1.find_time_axis()
         self.assertTrue(isinstance(tvar, netCDF4.Variable))
 
-#    @unittest.skip("")
     def test_find_time_axis_unknown(self):
         import netCDF4
         dsh_1 = self._dsh_list["DS_BASE"][0]
@@ -653,6 +632,16 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         tvar = dsh_1.find_time_axis()
         self.assertTrue(isinstance(tvar, netCDF4.Variable))
+
+    def test_scan(self):
+        print 'test_scan'
+        scan_results = self._dsh_list["DS_BASE"][0].scan()
+        self.assertTrue('variables' in scan_results)
+        self.assertTrue('attributes' in scan_results)
+        self.assertTrue('dimensions' in scan_results)
+        self.assertFalse(scan_results['variables'] is None)
+        self.assertFalse(scan_results['attributes'] is None)
+        self.assertFalse(scan_results['dimensions'] is None)
 
 
 if __name__ == '__main__':
