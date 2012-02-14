@@ -21,7 +21,7 @@ class BaseExternalDataHandler():
     _ext_provider_res = None
     _ext_data_source_res = None
     _ext_dataset_res = None
-    _signature = None
+    _fingerprint = None
     _block_size = 10000
 
     def __init__(self, data_provider=None, data_source=None, ext_dset=None, *args, **kwargs):
@@ -38,29 +38,9 @@ class BaseExternalDataHandler():
         self._dimensions = None
     # Generic, utility and helper methods
 
-    def has_new_data(self, **kwargs):
-        last_signature = self._ext_dataset_res.update_description.last_signature
-
-        if last_signature is None or last_signature == "":
-            return True
-
-        # compare the last_signature to the current dataset _signature
-        dcr = self.compare(last_signature)
-        result = False
-        for x in dcr:
-            if x.difference != CompareResultEnum.EQUAL:
-                result = True
-                #dcr_result = dcr.get_result()
-            #if dcr_result[0] in [dcr.EQUAL, dcr.MOD_GATT]:
-        #    return False
-
-        #return True
-        return result
-        pass
-
-    def get_signature(self, recalculate=False, **kwargs):
+    def get_fingerprint(self, recalculate=False, **kwargs):
         """
-        Calculate the _signature of the dataset
+        Calculate the _fingerprint of the dataset
         """
         #        if self._dataset_desc_obj.data_sampling is None or self._dataset_desc_obj.data_sampling == "":
         #            data_sampling = BaseExternalDataHandler.DATA_SAMPLING_NONE
@@ -70,10 +50,10 @@ class BaseExternalDataHandler():
         data_sampling = self._ext_dataset_res.dataset_description.data_sampling
 
         if recalculate:
-            self._signature = None
+            self._fingerprint = None
 
-        if self._signature is not None:
-            return self._signature
+        if self._fingerprint is not None:
+            return self._fingerprint
 
         ret = {}
 
@@ -91,7 +71,7 @@ class BaseExternalDataHandler():
                     var_sha.update(var_atts[att.name])
 
                 if not data_sampling is DatasetDescriptionDataSamplingEnum.NONE:
-                    var = self.get_variable_data(vk.key)
+                    var = self.get_variable_data(vk.index_key)
                     if data_sampling is DatasetDescriptionDataSamplingEnum.FIRST_LAST:
                         slice_first = []
                         slice_last = []
@@ -117,7 +97,7 @@ class BaseExternalDataHandler():
                     else:
                         pass
 
-                var_map[vk.column_name] = var_sha.hexdigest(), var_atts
+                var_map[vk.name] = var_sha.hexdigest(), var_atts
 
             sha_vars = hashlib.sha1()
             for key in var_map:
@@ -156,27 +136,43 @@ class BaseExternalDataHandler():
             if ret[key] is not None:
                 sha_full.update(ret[key][0])
 
-        self._signature = sha_full.hexdigest(), ret
-        return self._signature
+        self._fingerprint = sha_full.hexdigest(), ret
+        return self._fingerprint
 
-    def compare(self, data_signature):
+    def has_data_changed(self, fingerprint='', **kwargs):
+        if fingerprint is None or fingerprint == "":
+            return True
 
-        my_sig = self.get_signature(recalculate=True)
+        # compare the last_fingerprint to the current dataset _fingerprint
+        dcr = self.compare(fingerprint)
+        result = False
+        for x in dcr:
+            if x.difference != CompareResultEnum.EQUAL:
+                result = True
+
+        return result
+
+    def compare(self, data_fingerprint):
+
+        if data_fingerprint == '' or data_fingerprint is None:
+            return None
+
+        my_sig = self.get_fingerprint(recalculate=True)
 
         result = []
 
-        if my_sig[0] != data_signature[0]:
+        if my_sig[0] != data_fingerprint[0]:
             #TODO: make info
-            print "=!> Full signatures differ"
-            if "dims" in my_sig[1] and "dims" in data_signature[1]:
+            print "=!> Full fingerprints differ"
+            if "dims" in my_sig[1] and "dims" in data_fingerprint[1]:
 
-                if my_sig[1]["dims"][0] != data_signature[1]["dims"][0]:
+                if my_sig[1]["dims"][0] != data_fingerprint[1]["dims"][0]:
                     #TODO: make info
                     print "==!> Dimensions differ"
                     for dk in my_sig[1]["dims"][1]:
                         v1 = my_sig[1]["dims"][1][dk]
-                        if dk in data_signature[1]["dims"][1]:
-                            v2 = data_signature[1]["dims"][1][dk]
+                        if dk in data_fingerprint[1]["dims"][1]:
+                            v2 = data_fingerprint[1]["dims"][1][dk]
                         else:
                             #TODO: make info
                             print "===!> Dimension '%s' does not exist in 2nd dataset" % dk
@@ -198,8 +194,8 @@ class BaseExternalDataHandler():
                         #                        print "====> Dimension '%s' is equal" % dk
                             continue
 
-                    for dk in data_signature[1]["dims"][1]:
-                        v1 = data_signature[1]["dims"][1][dk]
+                    for dk in data_fingerprint[1]["dims"][1]:
+                        v1 = data_fingerprint[1]["dims"][1][dk]
                         if dk in my_sig[1]["dims"][1]:
                             v2 = my_sig[1]["dims"][1][dk]
                         else:
@@ -215,14 +211,14 @@ class BaseExternalDataHandler():
                     #TODO: make info
                     print "===> Dimensions are equal"
 
-            if "gbl_atts" in my_sig[1] and "gbl_atts" in data_signature[1]:
-                if my_sig[1]["gbl_atts"][0] != data_signature[1]["gbl_atts"][0]:
+            if "gbl_atts" in my_sig[1] and "gbl_atts" in data_fingerprint[1]:
+                if my_sig[1]["gbl_atts"][0] != data_fingerprint[1]["gbl_atts"][0]:
                     #TODO: make info
                     print "==!> Global Attributes differ"
                     for gk in my_sig[1]["gbl_atts"][1]:
                         v1 = my_sig[1]["gbl_atts"][1][gk]
-                        if gk in data_signature[1]["gbl_atts"][1]:
-                            v2 = data_signature[1]["gbl_atts"][1][gk]
+                        if gk in data_fingerprint[1]["gbl_atts"][1]:
+                            v2 = data_fingerprint[1]["gbl_atts"][1][gk]
                         else:
                             #TODO: make info
                             print "===!> Global Attribute '%s' does not exist in 2nd dataset" % gk
@@ -244,8 +240,8 @@ class BaseExternalDataHandler():
                         #                        print "====> Global Attribute '%s' is equal" % gk
                             continue
 
-                    for gk in data_signature[1]["gbl_atts"][1]:
-                        v1 = data_signature[1]["gbl_atts"][1][gk]
+                    for gk in data_fingerprint[1]["gbl_atts"][1]:
+                        v1 = data_fingerprint[1]["gbl_atts"][1][gk]
 
                         if gk in my_sig[1]["gbl_atts"][1]:
                             v2 = my_sig[1]["gbl_atts"][1][gk]
@@ -263,14 +259,14 @@ class BaseExternalDataHandler():
                     #TODO: make info
                     print "===> Global Attributes are equal"
 
-            if "vars" in my_sig[1] and "vars" in data_signature[1]:
-                if my_sig[1]["vars"][0] != data_signature[1]["vars"][0]:
+            if "vars" in my_sig[1] and "vars" in data_fingerprint[1]:
+                if my_sig[1]["vars"][0] != data_fingerprint[1]["vars"][0]:
                     #TODO: make info
                     print "==!> Variable attributes differ"
                     for vk in my_sig[1]["vars"][1]:
                         v1 = my_sig[1]["vars"][1][vk][0]
-                        if vk in data_signature[1]["vars"][1]:
-                            v2 = data_signature[1]["vars"][1][vk][0]
+                        if vk in data_fingerprint[1]["vars"][1]:
+                            v2 = data_fingerprint[1]["vars"][1][vk][0]
                         else:
                             #TODO: make info
                             print "===!> Variable '%s' does not exist in 2nd dataset" % vk
@@ -289,8 +285,8 @@ class BaseExternalDataHandler():
                             result.append(res)
                             for vak in my_sig[1]["vars"][1][vk][1]:
                                 va1 = my_sig[1]["vars"][1][vk][1][vak]
-                                if vak in data_signature[1]["vars"][1][vk][1]:
-                                    va2 = data_signature[1]["vars"][1][vk][1][vak]
+                                if vak in data_fingerprint[1]["vars"][1][vk][1]:
+                                    va2 = data_fingerprint[1]["vars"][1][vk][1][vak]
                                 else:
                                     #TODO: make info
                                     print "====!> Variable Attribute '%s' does not exist in 2nd dataset" % vak
@@ -312,8 +308,8 @@ class BaseExternalDataHandler():
                                 #                                print "======> Variable Attribute '%s' is equal" % vak
                                     continue
 
-                    for vk in data_signature[1]["vars"][1]:
-                        v1 = data_signature[1]["vars"][1][vk][0]
+                    for vk in data_fingerprint[1]["vars"][1]:
+                        v1 = data_fingerprint[1]["vars"][1][vk][0]
                         if vk in my_sig[1]["vars"][1]:
                             v2 = my_sig[1]["vars"][1][vk][0]
                         else:

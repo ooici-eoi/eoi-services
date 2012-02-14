@@ -248,12 +248,10 @@ class TestHfrRadialDataHandler(PyonTestCase):
         pass
 
     def test_get_attributes(self):
-        print 'test_get_attributes'
         attributes = self._datasets['base'].get_attributes()
         #make sure attributes match up here?
 
     def test_acquire_data(self):
-        print 'test_acquire_data'
         data_iter = self._datasets['base'].acquire_data()
         for vn, slice_, rng, data in data_iter:
             self.assertTrue(isinstance(slice_, tuple))
@@ -261,158 +259,148 @@ class TestHfrRadialDataHandler(PyonTestCase):
             self.assertTrue(isinstance(data, numpy.ndarray))
 
     def test_acquire_data_one_variable(self):
-        print 'test_acquire_data_one_variable'
         data_iter = self._datasets['base'].acquire_data(var_name='LOND')
         for vn, slice_, rng, data in data_iter:
             self.assertTrue(isinstance(slice_, tuple))
             self.assertTrue(isinstance(rng, tuple))
             self.assertTrue(isinstance(data, numpy.ndarray))
 
+    def test_has_data_changed_true(self):
+        fingerprint = self._datasets['base'].get_fingerprint()
+        self.assertFalse(self._datasets['base'].has_data_changed(fingerprint))
+
+    def test_has_data_changed_false(self):
+        fingerprint = self._datasets['base'].get_fingerprint()
+        self.assertTrue(self._datasets['mod_gatt'].has_data_changed(fingerprint))
+
     def test_has_new_data_true(self):
-        self._datasets['base']._ext_dataset_res.update_description.last_signature = self._datasets['base'].get_signature()
-        self.assertFalse(self._datasets['base'].has_new_data())
+        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/'
+        previous_files = ['http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0000.ruv',
+                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0100.ruv',
+                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0200.ruv',
+                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0300.ruv']
 
-    def test_has_new_data_false(self):
-        self._datasets['base']._ext_dataset_res.update_description.last_signature = self._datasets['base'].get_signature()
-        self.assertTrue(self._datasets['mod_gatt'].has_new_data())
+        res = self._datasets['base'].has_new_data(url=url, previous_files=previous_files)
+        self.assertTrue(res)
 
-    def test_get_signature(self):
-        print 'test_get_signature'
+    def test_get_fingerprint(self):
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
-        signature = self._datasets['base'].get_signature(True)
-        self.assertTrue(not len(signature) == 0)
+        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self.assertTrue(not len(fingerprint) == 0)
 
-    def test_get_signature_no_recalculate(self):
-        print 'test_get_signature_no_recalculate'
+    def test_get_fingerprint_no_recalculate(self):
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
-        signature1 = self._datasets['base'].get_signature(True) #initialize the signature
-        signature2 = self._datasets['base'].get_signature(False) # make sure you get the same one back
-        self.assertEqual(signature1, signature2)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True) #initialize the fingerprint
+        fingerprint2 = self._datasets['base'].get_fingerprint(False) # make sure you get the same one back
+        self.assertEqual(fingerprint1, fingerprint2)
 
-    def test_get_signature_full(self):
-        print 'test_get_signature_full'
+    def test_get_fingerprint_full(self):
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature = self._datasets['base'].get_signature(True)
-        self.assertTrue(not len(signature) == 0)
+        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self.assertTrue(not len(fingerprint) == 0)
 
-    def test_get_signature_first_last(self):
-        print 'test_get_signature_first_last'
+    def test_get_fingerprint_first_last(self):
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        signature = self._datasets['base'].get_signature(True)
-        self.assertTrue(not len(signature) == 0)
+        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self.assertTrue(not len(fingerprint) == 0)
 
     def test_compare_equal_full(self):
-        print 'test_compare_equal_full'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature = self._datasets['base'].get_signature(True)
-        for x in self._datasets['base'].compare(signature):
+        fingerprint = self._datasets['base'].get_fingerprint(True)
+        for x in self._datasets['base'].compare(fingerprint):
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
     def test_compare_equal_first_last(self):
-        print 'test_compare_equal_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature = self._datasets['base'].get_signature(True)
-        for x in self._datasets['base'].compare(signature):
+        fingerprint = self._datasets['base'].get_fingerprint(True)
+        for x in self._datasets['base'].compare(fingerprint):
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
     def test_compare_mod_gatt_full(self):
-        print 'test_compare_mod_gatt_full'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['mod_gatt'].compare(signature1):
+        for x in self._datasets['mod_gatt'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
 
     def test_compare_mod_gatt_full_first_last(self):
-        print 'test_compare_mod_gatt_full_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_gatt'].compare(signature1):
+        for x in self._datasets['mod_gatt'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.MOD_GATT or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_mod_gatt_first_last(self):
-        print 'test_compare_mod_gatt_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_gatt'].compare(signature1):
+        for x in self._datasets['mod_gatt'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
 
     def test_compare_new_gatt_full(self):
-        print 'test_compare_new_gatt_full'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['new_gatt'].compare(signature1):
+        for x in self._datasets['new_gatt'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.NEW_GATT)
 
     def test_compare_new_gatt_full_first_last(self):
-        print 'test_compare_new_gatt_full_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_gatt'].compare(signature1):
+        for x in self._datasets['new_gatt'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.NEW_GATT or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_new_gatt_first_last(self):
-        print 'test_compare_new_gatt_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_gatt'].compare(signature1):
+        for x in self._datasets['new_gatt'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.NEW_GATT)
 
     def test_compare_mod_varatt_full(self):
-        print 'test_compare_mod_varatt_full'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['mod_varatt'].compare(signature1):
+        for x in self._datasets['mod_varatt'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_mod_varatt_full_first_last(self):
-        print 'test_compare_mod_varatt_full_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_varatt'].compare(signature1):
+        for x in self._datasets['mod_varatt'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_mod_varatt_first_last(self):
-        print 'test_compare_mod_varatt_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_varatt'].compare(signature1):
+        for x in self._datasets['mod_varatt'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_new_var_full(self):
-        print 'test_compare_new_var_full'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['new_var'].compare(signature1):
+        for x in self._datasets['new_var'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.NEW_VAR)
 
     def test_compare_new_var_full_first_last(self):
-        print 'test_compare_new_var_full_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_var'].compare(signature1):
+        for x in self._datasets['new_var'].compare(fingerprint1):
             self.assertTrue(x.difference == CompareResultEnum.NEW_VAR or x.difference == CompareResultEnum.MOD_VAR)
 
     def test_compare_new_var_first_last(self):
-        print 'test_compare_new_var_first_last'
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        signature1 = self._datasets['base'].get_signature(True)
+        fingerprint1 = self._datasets['base'].get_fingerprint(True)
         self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_var'].compare(signature1):
+        for x in self._datasets['new_var'].compare(fingerprint1):
             self.assertEqual(x.difference, CompareResultEnum.NEW_VAR)
 
     def test_scan(self):
-        print 'test_scan'
         scan_results = self._datasets['base'].scan()
         self.assertTrue('variables' in scan_results)
         self.assertTrue('attributes' in scan_results)

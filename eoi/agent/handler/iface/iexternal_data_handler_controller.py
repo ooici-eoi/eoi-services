@@ -32,11 +32,18 @@ class IExternalDataHandlerController(Interface):
     #        """
     #        pass
 
+    def has_data_changed(last_fingerprint='', **kwargs):
+        """
+        This method should use the get_fingerprint and compare methods to determine if the current data source has changed
+
+        @retval A boolean indicating if the data has changed
+        """
+
     def has_new_data(**kwargs):
         """
-        This method should use the get_signature and compare methods to determine if there is new data at the source that has not yet been acquired by the system
+        This method determines if there is new data at the surce
 
-        @retval A boolean indicating if there is new data available from the External Observatory
+        @retval A boolean indicating if there is new data available
         """
 
     def acquire_data(var_name=None, slice_=(), **kwargs):
@@ -73,23 +80,23 @@ class IExternalDataHandlerController(Interface):
         @retval a dictionary containing the name/value pairs for all attributes in the given scope.
         """
 
-    def get_signature(recalculate=False, data_sampling=None, **kwargs):
+    def get_fingerprint(recalculate=False, data_sampling=None, **kwargs):
         """
-        Generates a "_signature" of the dataset referenced by this ExternalDataHandler.
+        Generates a "_fingerprint" of the dataset referenced by this ExternalDataHandler.
         It's precise form is determined by the concrete *ExternalDataHandler class.
 
-        The _signature should describe the data set in enough detail that changes
-        can be detected by comparison of signatures.
+        The _fingerprint should describe the data set in enough detail that changes
+        can be detected by comparison of fingerprints.
 
-        @param recalculate If True, the method should force recalculation of the _signature
-        @param data_sampling Indicates the type of data sampling that should be used when generating the _signature - a member of the BaseExternalDataHandler.DATA_SAMPLING* attribute set should be used.  If BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN is provided, a kwarg ==> BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN_COUNT: (int) should also be provided
+        @param recalculate If True, the method should force recalculation of the _fingerprint
+        @param data_sampling Indicates the type of data sampling that should be used when generating the _fingerprint - a member of the BaseExternalDataHandler.DATA_SAMPLING* attribute set should be used.  If BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN is provided, a kwarg ==> BaseExternalDataHandler.DATA_SAMPLING_SHOTGUN_COUNT: (int) should also be provided
 
-        @retval The _signature for the dataset referenced by this ExternalDataHandler
+        @retval The _fingerprint for the dataset referenced by this ExternalDataHandler
         """
 
-    def compare(dataset_signature=""):
+    def compare(dataset_fingerprint=""):
         """
-        Compares the _signature of this instance of ExternalDataHandler with the passed instance.
+        Compares the _fingerprint of this instance of ExternalDataHandler with the passed instance.
         At a minimum, the compare method should return an indicator that can be used to determine if there
         is new data available from the ExternalDataProducer.
 

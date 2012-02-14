@@ -11,18 +11,8 @@ class AsciiExternalDataHandler(BaseExternalDataHandler):
     def __init__(self, data_provider=None, data_source=None, ext_dataset=None, *args, **kwargs):
         BaseExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, *args, **kwargs)
 
-        self._number_of_records = 0
-        self._data_array = None
-
-    def _load_values(self, filename='', comments=''):
-        self._data_array = numpy.genfromtxt(fname=filename, comments=comments)
-
-        index = 0
-        for var in self._variables:
-            var.key = index
-            index += 1
-
-        self._number_of_records = self._data_array.shape[0]
+        self._comments = ''
+        self._data_source = ''
 
     def get_attributes(self, scope=None):
         """
@@ -35,13 +25,13 @@ class AsciiExternalDataHandler(BaseExternalDataHandler):
             result = self._global_attributes
         else:
             for var in self._variables:
-                if var.column_name == scope:
+                if var.name == scope:
                     result = var.attributes
 
         return result
 
     def get_variable_data(self, key=''):
-        return self._data_array[:,key]
+        return numpy.genfromtxt(fname=self._data_source, comments=self._comments, usecols=(int(key)))
 
     def acquire_data(self, var_name=None, slice_=()):
 
@@ -51,12 +41,12 @@ class AsciiExternalDataHandler(BaseExternalDataHandler):
 
         if not var_name is None:
             for var in self._variables:
-                if var.column_name == var_name:
+                if var.name == var_name:
                     vars = [var]
                     break
 
         for vn in vars:
-            var = self._data_array[:,vn.key]
+            var = self.get_variable_data(vn.index_key)
 
             ndims = len(var.shape)
             # Ensure the slice_ is the appropriate length

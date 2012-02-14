@@ -42,8 +42,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         for vn in self._ds.variables.keys():
             var = self._ds.variables[vn]
             newvar = Variable()
-            newvar.key = vn
-            newvar.column_name = vn
+            newvar.index_key = vn
+            newvar.name = vn
             newvar.attributes = []
             for ak in var.ncattrs():
                 att = var.getncattr(ak)
@@ -130,6 +130,12 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return
 
+    def has_new_data(self, **kwargs):
+        result = False
+
+        return result
+        pass
+
     def acquire_new_data(self):
         tvar = self.find_time_axis()
 
@@ -206,8 +212,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
         return self._tvar
 
-    def _pprint_signature(self):
-        sig = self.get_signature()
+    def _pprint_fingerprint(self):
+        sig = self.get_fingerprint()
         nl = "\n"
         str_lst = []
         str_lst.append(sig[0])
@@ -252,4 +258,4 @@ class DapExternalDataHandler(BaseExternalDataHandler):
 
     def __repr__(self):
 #        return "%s\n***\ndataset keys: %s" % (BaseExternalObservatoryHandler.__repr__(self), self._ds.keys())
-        return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_signature(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self._ds, str(self.find_time_axis()), self._pprint_signature())
+        return "%s\n***\ndataset:\n%s\ntime_var: %s\ndataset_fingerprint(sha1): %s" % (BaseExternalDataHandler.__repr__(self), self._ds, str(self.find_time_axis()), self._pprint_fingerprint())

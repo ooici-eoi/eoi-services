@@ -21,12 +21,11 @@ class TestDapExternalDataHandler(PyonTestCase):
     _twelve_x_ten_x_ten = None
 
     def setUp(self):
-
-        self._ds_base_sig = ('c382af4cf317dafd1f4876632ea41675d3b94491',
-                                 {'dims': ('da7800cfdcc7dd9b040e706fd02ed840b7f0aaf3',
-                                    {u'lat': '4b9b90a092b2ba94a429a6b004354f7df8f01c83',
-                                     u'lon': 'd173e3813934f53a3d1e0bdbcc1a2c22f87da819',
-                                     u'time': '75183d41ece6086b7e0bdf69da8d4ba6038ad7aa'}),
+        self._ds_base_sig = ('89fc34cc894ccde2ae83b71ed60d1f8bf7705b75',
+                                 {'dims': ('b1c1a3fbba162ac0ccfd0af05fd9673adfd41ea9',
+                                    {u'lat': 'ce1d497b71e7ef0c4b43eaffbade5073dbc450ee',
+                                     u'lon': '2a4e0de4e2c037a94aa75cdf59dfb5b1f2fddcc5',
+                                     u'time': '7d0730bff4ef5dcf6034f5b7b5285b6fa9422816'}),
                                   'gbl_atts': ('09a13128e45c6e1909c4b762bdd0d84b9736cfbe',
                                     {u'history': '70d1ff82dbc7cc7a0972f67ab75ce93a184f160f',
                                      u'creator': '3c5b4941b7b4594facec9eb943e4d3c5401d882a'}),
@@ -283,27 +282,27 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertEqual(ex.message, "Invalid DatasetHandler: ExternalDataset resource cannot be 'None'")
 
     #@unittest.skip("")
-    def test_get_signature(self):
+    def test_get_fingerprint(self):
         dsh = self._dsh_list["DS_BASE"][0]
-        ## Tests the case where the signature is force-recalculated
-        signature = dsh.get_signature(recalculate=True)
-        ## Uncomment this line when the guts of "get_signature" has changed to print the new "correct" value - replace "self._ds_base_sig" with the output
+        ## Tests the case where the fingerprint is force-recalculated
+        fingerprint = dsh.get_fingerprint(recalculate=True)
+        ## Uncomment this line when the guts of "get_fingerprint" has changed to print the new "correct" value - replace "self._ds_base_sig" with the output
 
-        self.assertEqual(signature, self._ds_base_sig)
+        self.assertEqual(fingerprint, self._ds_base_sig)
 
-        ## Tests the case where the signature has already been calculated
-        signature = dsh.get_signature()
+        ## Tests the case where the fingerprint has already been calculated
+        fingerprint = dsh.get_fingerprint()
 
         dsh._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
-        signature = dsh.get_signature(recalculate=True)
-        self.assertEqual(signature, self._ds_base_sig)
+        fingerprint = dsh.get_fingerprint(recalculate=True)
+        self.assertEqual(fingerprint, self._ds_base_sig)
 
     def test_compare_equal_no_data(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
 
-        dcr = dsh_1.compare(dsh_2.get_signature())
+        dcr = dsh_1.compare(dsh_2.get_fingerprint())
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
@@ -322,7 +321,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
         dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
 
-        dcr = dsh_1.compare(dsh_2.get_signature())
+        dcr = dsh_1.compare(dsh_2.get_fingerprint())
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
@@ -333,7 +332,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         dsh_2 = self._dsh_list["DS_BASE_DUP"][0]
         dsh_2._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
 
-        dcr = dsh_1.compare(dsh_2.get_signature())
+        dcr = dsh_1.compare(dsh_2.get_fingerprint())
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
@@ -344,7 +343,7 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         dsh_2 = self._dsh_list["DS_GLOBAL_ATT_CHANGED"][0]
 
-        dcr = dsh_1.compare(dsh_2.get_signature())
+        dcr = dsh_1.compare(dsh_2.get_fingerprint())
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
 
@@ -353,7 +352,7 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         dsh_2 = self._dsh_list["DS_DIM_SIZE_CHANGED"][0]
 
-        dcr = dsh_1.compare(dsh_2.get_signature())
+        dcr = dsh_1.compare(dsh_2.get_fingerprint())
         for x in dcr:
             self.assertEqual(x.difference, CompareResultEnum.MOD_DIM)
 
@@ -375,30 +374,25 @@ class TestDapExternalDataHandler(PyonTestCase):
 
         self.assertEqual(str(dsh_1), self._ds1_repr)
 
-    def test_has_new_data_false(self):
+    def test_has_data_changed_false(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        dsh_1._ext_dataset_res.update_description.last_signature = self._ds_base_sig
+        self.assertFalse(dsh_1.has_data_changed(self._ds_base_sig))
 
-        self.assertFalse(dsh_1.has_new_data())
-
-    def test_has_new_data_true(self):
+    def test_has_data_changed_true(self):
         dsh_1 = self._dsh_list["DS_ADDITIONAL_TIMES"][0]
 
-        dsh_1._ext_dataset_res.update_description.last_signature = self._ds_base_sig
+        self.assertTrue(dsh_1.has_data_changed(self._ds_base_sig))
 
-        self.assertTrue(dsh_1.has_new_data())
-
-    def test_has_new_data_initial(self):
+    def test_has_data_changed_initial(self):
         dsh_1 = self._dsh_list["DS_BASE"][0]
 
-        # Tests when last_signature is an empty string
-        self.assertTrue(dsh_1.has_new_data())
+        # Tests when last_fingerprint is an empty string
+        res = dsh_1.has_data_changed('')
+        self.assertTrue(res)
 
-        # Tests when last_signature is None (this shouldn't really happen unless someone/thing specifically sets it to None
-        dsh_1._ext_dataset_res.update_description.last_signature = None
-
-        self.assertTrue(dsh_1.has_new_data())
+        res = dsh_1.has_data_changed(None)
+        self.assertTrue(res)
 
     @unittest.skip("Needs refactoring -> ExternalDataRequest properties are wrong")
     def test_acquire_data_by_request_multidim_byte(self):

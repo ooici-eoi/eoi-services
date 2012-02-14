@@ -6,6 +6,32 @@ from pyon.public import log
 from interface.objects import Variable, Attribute
 from eoi.agent.handler.ascii_external_data_handler import *
 import numpy
+from HTMLParser import HTMLParser
+import urllib
+
+class AnchorParser(HTMLParser):
+
+    _link_names = []
+    _in_file_link = False
+    _directory_names = []
+    _in_dir_link = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'img' and not self._in_file_link and not self._in_dir_link: #check the associated image first, to make sure it's a file link
+            for key, value in attrs:
+                if key == 'src' and 'unknown.gif' in value:
+                    self._in_file_link = True
+                elif key == 'src' and 'folder.gif' in value:
+                    self._in_dir_link = True
+        if tag =='a' :
+            for key, value in attrs:
+                if key == 'href':
+                    if self._in_file_link:
+                        self._link_names.append(value)
+                        self._in_file_link = False
+                    elif self._in_dir_link:
+                        self._directory_names.append(value)
+                        self._in_dir_link = False
 
 
 class HfrRadialDataHandler(AsciiExternalDataHandler):
@@ -14,12 +40,11 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
         AsciiExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, *args, **kwargs)
         #TODO: Verify parameters as appropriate IonObjects
 
-        import os
         self._variables = []
         self._global_attributes = []
-        self._data_source = os.path.basename(data_source)
+        self._data_source = data_source
         self._load_attributes(data_source)
-        self._load_values(data_source, '%')
+        self._comments = '%'
 
     def _load_attributes(self, filename=''):
         import urllib
@@ -81,19 +106,55 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
         parsed_line = new_line.partition(':')
         if parsed_line[0] == 'TableColumnTypes' and correct_table_type:
             cols = parsed_line[2].split(' ')
+            index = 0
             for col in cols:
                 if not col == '' and not col == '\n':
                     var = Variable()
                     var.attributes = []
-                    var.column_name = col
-                    #var.key = col
+                    var.name = col
+                    var.index_key = str(index)
                     self._variables.append(var)
+                    index += 1
         elif not parsed_line[0].startswith('Table'):
             if not parsed_line[2] == '':
                 att = Attribute()
                 att.name = parsed_line[0]
                 att.value = parsed_line[2].replace('\n', '')
                 attributes.append(att)
+
+    def has_new_data(self, **kwargs):
+        result = False
+
+        if not 'url' in kwargs:
+            return result
+
+        #TODO: need to get list of previous files from couch, instead of passing in as parameter
+        if not 'previous_files' in kwargs:
+            return result
+
+        url = kwargs['url']
+        list_of_previous_files = kwargs['previous_files']
+
+        parser = AnchorParser()
+        data = urllib.urlopen(url).read()
+        parser.feed(data)
+        directory_names = parser._directory_names
+        for dir_name in directory_names:
+            parser2 = AnchorParser()
+            data2 = urllib.urlopen(url + '/' + dir_name).read()
+            parser2.feed(data2)
+
+            file_names = parser2._link_names
+            for file_name in file_names:
+                file_url = url + dir_name + file_name
+                if not file_url in list_of_previous_files:
+                    list_of_previous_files.append(file_url)
+                    result = True
+
+        #TODO: need to store the list of files somewhere for next time
+
+        return result
+
 
     #def acquire_data_by_request(self, request=None, **kwargs):
     #    """
