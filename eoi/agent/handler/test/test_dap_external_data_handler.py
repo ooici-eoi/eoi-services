@@ -3,6 +3,8 @@ __author__ = 'cmueller'
 
 import tempfile
 import os
+from pyon.util.int_test import IonIntegrationTestCase
+from eoi.agent.data_acquisition_management_service_Placeholder import *
 from netCDF4 import Dataset
 from nose.plugins.attrib import attr
 from eoi.agent.handler.dap_external_data_handler import DapExternalDataHandler
@@ -10,6 +12,8 @@ from eoi.agent.handler.base_external_data_handler import DataAcquisitionError, I
 from pyon.util.unit_test import PyonTestCase
 from interface.objects import ExternalDataset, DataSource, DatasetDescription, UpdateDescription, ContactInformation, ExternalDataRequest, DatasetDescriptionDataSamplingEnum, CompareResult, CompareResultEnum
 import unittest
+import numpy
+from numpy import array
 
 
 @attr('UNIT', group='eoi')
@@ -151,7 +155,6 @@ class TestDapExternalDataHandler(PyonTestCase):
         pass
 
     def _create_tst_data_set(self, tmp_handle, tmp_name, key):
-        import numpy
         ds = Dataset(tmp_name, 'w')
         time = ds.createDimension('time', None)
         lat = ds.createDimension('lat', 80)
@@ -392,6 +395,19 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertTrue(res)
 
         res = dsh_1.has_data_changed(None)
+        self.assertTrue(res)
+
+    def test_has_new_data_false(self):
+        timesteps = array([1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600,
+                     1322719200, 1322722799, 1322726400, 1322730000])
+        dsh_1 = self._dsh_list["DS_BASE"][0]
+        res = dsh_1.has_new_data(timesteps=timesteps)
+        self.assertFalse(res)
+
+    def test_has_new_data_true(self):
+        timesteps = array([1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600])
+        dsh_1 = self._dsh_list["DS_BASE"][0]
+        res = dsh_1.has_new_data(timesteps=timesteps)
         self.assertTrue(res)
 
     @unittest.skip("Needs refactoring -> ExternalDataRequest properties are wrong")
@@ -637,6 +653,45 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertFalse(scan_results['attributes'] is None)
         self.assertFalse(scan_results['dimensions'] is None)
 
+@attr('INT', group='eoi')
+class TestIntDapExternalDataHandler(IonIntegrationTestCase):
 
-if __name__ == '__main__':
-    unittest.main()
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+        #### Tests
+    #    @unittest.skip("for now")
+    def test_get_signature(self):
+        # TODO: Replace this placeholder with appropriate service call(s)
+        damsP = DataAcquisitionManagementServicePlaceholder()
+        dsh = damsP.get_data_handler(ds_id=HFR)
+
+        fingerprint = dsh.get_fingerprint()
+
+        # The signature for this particular dataset should always be 4562 characters in length (even though the values themselves will change)
+        self.assertTrue(len(str(fingerprint)) == 4562)
+
+
+    #    @unittest.skip("for now")
+    def test_has_data_changed_false(self):
+        # TODO: Replace this placeholder with appropriate service call(s)
+        damsP = DataAcquisitionManagementServicePlaceholder()
+        dsh = damsP.get_data_handler(ds_id=HFR)
+
+        # Get the signature
+        fingerprint = dsh.get_fingerprint()
+
+        # Set the last_signature == current signature
+
+        self.assertFalse(dsh.has_data_changed(fingerprint))
+
+    #    @unittest.skip("for now")
+    def test_has_new_data_initial(self):
+        # TODO: Replace this placeholder with appropriate service call(s)
+        damsP = DataAcquisitionManagementServicePlaceholder()
+        dsh = damsP.get_data_handler(ds_id=HFR)
+
+        self.assertTrue(dsh.has_data_changed())

@@ -133,8 +133,15 @@ class DapExternalDataHandler(BaseExternalDataHandler):
     def has_new_data(self, **kwargs):
         result = False
 
+        if not 'timesteps' in kwargs:
+            return result
+
+        timevar = self.find_time_axis()
+        timesteps = kwargs['timesteps']
+
+        result = not numpy.array_equal(timevar[:], timesteps)
+
         return result
-        pass
 
     def acquire_new_data(self):
         tvar = self.find_time_axis()
