@@ -7,19 +7,22 @@
 @brief 
 """
 
-from interface.services.eoi.iexternal_observatory_agent_service import ExternalObservatoryAgentServiceClient
-from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
+#from interface.services.eoi.iexternal_observatory_agent_service import ExternalObservatoryAgentServiceClient
+#from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
 from interface.services.sa.idata_acquisition_management_service import DataAcquisitionManagementServiceClient
+from interface.services.sa.idata_product_management_service import DataProductManagementServiceClient
+from pyon.agent.agent import ResourceAgentClient
 from pyon.util.containers import DotDict
 from pyon.public import log, PRED
 from pyon.core.exception import IonException
+from pyon.util.context import LocalContextMixin
 from pyon.util.unit_test import PyonTestCase
 from mock import Mock
 from nose.plugins.attrib import attr
 import unittest
 from pyon.util.int_test import IonIntegrationTestCase
 from eoi.services.external_observatory_agent_service import ExternalObservatoryAgentService
-from interface.objects import ExternalDataAgent, ExternalDataAgentInstance, ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, Stream, AgentCommand
+from interface.objects import ExternalDataAgent, ExternalDataAgentInstance, ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, AgentCommand, DataProduct
 
 __author__ = 'Christopher Mueller'
 __licence__ = 'Apache 2.0'
@@ -91,6 +94,9 @@ class TestExternalObservatoryAgentService(PyonTestCase):
         pass
 
 
+class FakeProcess(LocalContextMixin):
+    name = ''
+    id='someid'
 
 @attr('INT', group='eoi-svc')
 class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
@@ -99,9 +105,11 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         self._start_container()
         self.container.start_rel_from_url(rel_url='res/deploy/r2eoi.yml')
 
-        self.eoas_cli = ExternalObservatoryAgentServiceClient()
-        self.rr_cli = ResourceRegistryServiceClient()
+#        self.eoas_cli = ExternalObservatoryAgentServiceClient()
+#        self.rr_cli = ResourceRegistryServiceClient()
         self.dams_cli = DataAcquisitionManagementServiceClient()
+        self.dpms_cli = DataProductManagementServiceClient()
+
 
         # The EOAS acts as the AgentInstance for this deployment scheme
         eda_inst = ExternalDataAgentInstance()
@@ -112,6 +120,14 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         self._setup_ncom()
         self._setup_hfr()
+
+#        eoas_proc = self.container.proc_manager.procs_by_name['external_data_agent_management']
+#        log.debug("Got EOAS Process: %s" % eoas_proc)
+        self._ncom_agt_cli = ResourceAgentClient(resource_id=self.ncom_ds_id, name='external_observatory_agent', process=FakeProcess())
+        log.debug("Got a ResourceAgentClient: res_id=%s" % self._ncom_agt_cli.resource_id)
+
+        self._hfr_agt_cli = ResourceAgentClient(resource_id=self.hfr_ds_id, name='external_observatory_agent', process=FakeProcess())
+        log.debug("Got a ResourceAgentClient: res_id=%s" % self._hfr_agt_cli.resource_id)
 
     def _setup_ncom(self):
         # TODO: some or all of this (or some variation) should move to DAMS
@@ -144,7 +160,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         dsrc_model = ExternalDataSourceModel(name="dap_model")
         dsrc_model.model = "DAP"
         dsrc_model.data_handler_module = "eoi.agent.handler.dap_external_data_handler"
-        dsrc_model.data_handler_class = "DapExternalDataHandler"\
+        dsrc_model.data_handler_class = "DapExternalDataHandler"
 
         ## Run everything through DAMS
         ds_id = self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
@@ -153,7 +169,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         ext_dsrc_model_id = self.dams_cli.create_external_data_source_model(dsrc_model)
 
         # Register the ExternalDataset
-        dprod_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
+        dproducer_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
 
         ## Associate everything
         # Convenience method
@@ -165,6 +181,12 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 #        self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
 #        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
 #        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+
+        # Generate the data product and associate it to the ExternalDataset
+        dprod = DataProduct(name='ncom_product', description='raw ncom product')
+        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod, source_resource_id=ds_id)
+
+        self.dams_cli.assign_data_product(input_resource_id=ds_id, data_product_id=dproduct_id, create_stream=True)
 
     def _setup_hfr(self):
         # TODO: some or all of this (or some variation) should move to DAMS
@@ -199,7 +221,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         ext_dsrc_model_id = self.dams_cli.create_external_data_source_model(dsrc_model)
 
         # Register the ExternalDataset
-        dprod_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
+        dproducer_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
 
         ## Associate everything
         # Convenience method
@@ -212,132 +234,128 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
         self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
 
+        # Generate the data product and associate it to the ExternalDataset
+        dprod = DataProduct(name='hfr_product', description='raw hfr product')
+        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod, source_resource_id=ds_id)
+
+        self.dams_cli.assign_data_product(input_resource_id=ds_id, data_product_id=dproduct_id, create_stream=True)
+
 
 
 ########## Tests ##########
 
-##    @unittest.skip("")
-#    def test_spawn_worker(self):
-#        res_id = self.ncom_ds_id
-#
-#        log.debug("test_spawn_worker with res_id: %s" % res_id)
-#        res = self.eoas_cli.get_worker(res_id)
-#        self.assertTrue(res)
-
-#    @unittest.skip("Underlying method not yet implemented")
-    def test_get_worker(self, resource_id=''):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-        self.assertTrue(res)
-
 #    @unittest.skip("")
     def test_get_capabilities(self):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-
         # Get all the capabilities
-        caps = self.eoas_cli.get_capabilities(res_id)
+        caps = self._ncom_agt_cli.get_capabilities()
         log.debug("all capabilities: %s" % caps)
-        self.assertEqual(type(caps), list)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
 
-        # Get the resource commands
-        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['RES_CMD'])
+        caps = self._ncom_agt_cli.get_capabilities(capability_types=['RES_CMD'])
+        log.debug("resource commands: %s" % caps)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
+
+        caps = self._ncom_agt_cli.get_capabilities(capability_types=['RES_PAR'])
         log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
-        # Get the resource parameters
-        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['RES_PAR'])
-        log.debug("resource parameters: %s" % caps)
+        caps = self._ncom_agt_cli.get_capabilities(capability_types=['AGT_CMD'])
+        log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
-        # Get the agent commands
-        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['AGT_CMD'])
-        log.debug("agent commands: %s" % caps)
-        self.assertEqual(type(caps), list)
-
-        # Get the agent parameters
-        caps = self.eoas_cli.get_capabilities(res_id, capability_types=['AGT_PAR'])
-        log.debug("agent parameters: %s" % caps)
+        caps = self._ncom_agt_cli.get_capabilities(capability_types=['AGT_PAR'])
+        log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
 #    @unittest.skip("")
-    def test_execute_single_worker(self):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-
+    def test_execute_get_attrs(self):
         cmd = AgentCommand(command_id="111", command="get_attributes")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(res_id, command=cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
         self.assertTrue(type(ret.result), dict)
 
-        cmd = AgentCommand(command_id="111", command="get_signature")
+#    @unittest.skip("")
+    def test_execute_get_fingerprint(self):
+        cmd = AgentCommand(command_id="111", command="get_fingerprint")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(res_id, command=cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
+
+#    @unittest.skip("")
+    def test_execute_single_worker(self):
+        cmd = AgentCommand(command_id="111", command="get_attributes")
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
+
+        cmd = AgentCommand(command_id="112", command="get_fingerprint")
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
         self.assertTrue(type(ret.result), dict)
 
 #    @unittest.skip("")
     def test_execute_multi_worker(self):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-
-        res_id2 = self.hfr_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id2)
-        res = self.eoas_cli.get_worker(res_id2)
-
-        cmd = AgentCommand(command_id="112", command="get_signature")
+        cmd = AgentCommand(command_id="111", command="has_new_data")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(resource_id=res_id, command=cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
         self.assertTrue(type(ret.result), dict)
 
-        cmd = AgentCommand(command_id="112", command="get_signature")
+        cmd = AgentCommand(command_id="111", command="has_new_data")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(resource_id=res_id2, command=cmd)
+        ret = self._hfr_agt_cli.execute(cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
+
+        cmd = AgentCommand(command_id="112", command="get_fingerprint")
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
+        log.debug("Returned: %s" % ret)
+        self.assertEquals(ret.status, 0)
+        self.assertTrue(type(ret.result), dict)
+
+        cmd = AgentCommand(command_id="112", command="get_fingerprint")
+        log.debug("Execute AgentCommand: %s" % cmd)
+        ret = self._hfr_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
         self.assertTrue(type(ret.result), dict)
 
 #    @unittest.skip("")
     def test_execute_acquire_data(self):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-
         cmd = AgentCommand(command_id="113", command="acquire_data")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(res_id, command=cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
 
 #    @unittest.skip("")
     def test_execute_acquire_new_data(self):
-        res_id = self.ncom_ds_id
-
-        log.debug("test_get_worker with res_id: %s" % res_id)
-        res = self.eoas_cli.get_worker(res_id)
-
         cmd = AgentCommand(command_id="113", command="acquire_new_data")
         log.debug("Execute AgentCommand: %s" % cmd)
-        ret = self.eoas_cli.execute(res_id, command=cmd)
+        ret = self._ncom_agt_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
 
-#    @unittest.skip("Underlying method not yet implemented")
+    @unittest.skip("Underlying method not yet implemented")
     def test_set_param(self):
         res_id = self.ncom_ds_id
 
@@ -347,7 +365,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.set_param(resource_id=res_id, name="param", value="value")
 
-#    @unittest.skip("Underlying method not yet implemented")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_param(self):
         res_id = self.ncom_ds_id
 
@@ -357,7 +375,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.get_param(resource_id=res_id, name="param")
 
-#    @unittest.skip("Underlying method not yet implemented")
+    @unittest.skip("Underlying method not yet implemented")
     def test_execute_agent(self):
         res_id = self.ncom_ds_id
 
@@ -367,7 +385,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.execute_agent(resource_id=res_id)
 
-#    @unittest.skip("Underlying method not yet implemented")
+    @unittest.skip("Underlying method not yet implemented")
     def test_set_agent_param(self):
         res_id = self.ncom_ds_id
 
@@ -377,7 +395,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         with self.assertRaises(IonException):
             self.eoas_cli.set_agent_param(resource_id=res_id, name="param", value="value")
 
-#    @unittest.skip("Underlying method not yet implemented")
+    @unittest.skip("Underlying method not yet implemented")
     def test_get_agent_param(self):
         res_id = self.ncom_ds_id
 

@@ -25,6 +25,7 @@ from interface.messages import external_observatory_agent_execute_in, external_o
 
 class FakeProcess(LocalContextMixin):
     name = ''
+    id='someid'
 
 @attr('INT', group='eoi-agt')
 class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
@@ -33,7 +34,6 @@ class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
         self._start_container()
         self.container.start_rel_from_url(rel_url='res/deploy/r2eoi.yml')
 
-#        self.rr_cli = ResourceRegistryServiceClient()
         self.dams_cli = DataAcquisitionManagementServiceClient()
         self.dpms_cli = DataProductManagementServiceClient()
 
@@ -48,8 +48,7 @@ class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
 
         log.debug("Spawned worker process ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
 
-#        self._agent_cli = ProcessRPCClient(name=queue_id, process=self.container)
-        self._agent_cli = ResourceAgentClient(self.ncom_ds_id, name=pid, process=self.container.proc_manager.procs[pid])
+        self._agent_cli = ResourceAgentClient(self.ncom_ds_id, name=pid, process=FakeProcess())
         log.debug("Got a ResourceAgentClient: res_id=%s" % self._agent_cli.resource_id)
 
     def _setup_ncom(self):
@@ -119,11 +118,19 @@ class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
         # Get all the capabilities
         caps = self._agent_cli.get_capabilities()
         log.debug("all capabilities: %s" % caps)
-        self.assertEqual(type(caps), list)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
 
         caps = self._agent_cli.get_capabilities(capability_types=['RES_CMD'])
         log.debug("resource commands: %s" % caps)
-        self.assertEqual(type(caps), list)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
 
         caps = self._agent_cli.get_capabilities(capability_types=['RES_PAR'])
         log.debug("resource commands: %s" % caps)

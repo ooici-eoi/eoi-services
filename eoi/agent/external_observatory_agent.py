@@ -128,8 +128,8 @@ class ExternalObservatoryAgent(ResourceAgent):
     def rcmd_get_attributes(self, *args, **kwargs):
         return self._data_handler.get_attributes(*args, **kwargs)
 
-    def rcmd_get_signature(self, *args, **kwargs):
-        return self._data_handler.get_signature(*args, **kwargs)
+    def rcmd_get_fingerprint(self, *args, **kwargs):
+        return self._data_handler.get_fingerprint(*args, **kwargs)
 
     def rcmd_compare(self, *args, **kwargs):
         return self._data_handler.compare(*args, **kwargs)
