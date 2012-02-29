@@ -203,12 +203,12 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         # Create DataSource
         dsrc = DataSource(protocol_type="DAP", institution=Institution(), contact=ContactInformation())
-#        dsrc.connection_params["base_data_url"] = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
+        dsrc.connection_params["base_data_url"] = "http://hfrnet.ucsd.edu:8080/thredds/dodsC/"
 
         # Create ExternalDataset
         dset = ExternalDataset(name="UCSD HFR", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
-#        dset.dataset_description.parameters["dataset_path"] = "HFRNet/USEGC/6km/hourly/RTV"
-        dset.dataset_description.parameters["dataset_path"] = "test_data/hfr.nc"
+        dset.dataset_description.parameters["dataset_path"] = "HFRNet/USEGC/6km/hourly/RTV"
+#        dset.dataset_description.parameters["dataset_path"] = "test_data/hfr.nc"
         dset.dataset_description.parameters["temporal_dimension"] = "time"
         dset.dataset_description.parameters["zonal_dimension"] = "lon"
         dset.dataset_description.parameters["meridional_dimension"] = "lat"
