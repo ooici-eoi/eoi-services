@@ -110,14 +110,6 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         self.dams_cli = DataAcquisitionManagementServiceClient()
         self.dpms_cli = DataProductManagementServiceClient()
 
-
-        # The EOAS acts as the AgentInstance for this deployment scheme
-        eda_inst = ExternalDataAgentInstance()
-        self.eda_inst_id = self.dams_cli.create_external_data_agent_instance(eda_inst)
-
-        eda = ExternalDataAgent()
-        self.eda_id = self.dams_cli.create_external_data_agent(eda)
-
         self._setup_ncom()
         self._setup_hfr()
 
@@ -133,6 +125,12 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         # TODO: some or all of this (or some variation) should move to DAMS
 
         # Create and register the necessary resources/objects
+
+        eda_inst = ExternalDataAgentInstance()
+        eda_inst_id = self.dams_cli.create_external_data_agent_instance(eda_inst)
+
+        eda = ExternalDataAgent()
+        eda_id = self.dams_cli.create_external_data_agent(eda)
 
         # Create DataProvider
         dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
@@ -173,14 +171,14 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         ## Associate everything
         # Convenience method
-        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=eda_id, agent_instance_id=eda_inst_id)
 
         # Or using each method
 #        self.dams_cli.assign_data_source_to_external_data_provider(data_source_id=ext_dsrc_id, external_data_provider_id=ext_dprov_id)
 #        self.dams_cli.assign_data_source_to_data_model(data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id)
 #        self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
-#        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
-#        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+#        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=eda_inst_id)
+#        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=eda_id, agent_instance_id=eda_inst_id)
 
         # Generate the data product and associate it to the ExternalDataset
         dprod = DataProduct(name='ncom_product', description='raw ncom product')
@@ -192,6 +190,12 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
         # TODO: some or all of this (or some variation) should move to DAMS
 
         # Create and register the necessary resources/objects
+
+        eda_inst = ExternalDataAgentInstance()
+        eda_inst_id = self.dams_cli.create_external_data_agent_instance(eda_inst)
+
+        eda = ExternalDataAgent()
+        eda_id = self.dams_cli.create_external_data_agent(eda)
 
         # Create DataProvider
         dprov = ExternalDataProvider(institution=Institution(), contact=ContactInformation())
@@ -225,14 +229,15 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         ## Associate everything
         # Convenience method
-#        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+#        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=eda_id, agent_instance_id=eda_inst_id)
 
         # Or using each method
         self.dams_cli.assign_data_source_to_external_data_provider(data_source_id=ext_dsrc_id, external_data_provider_id=ext_dprov_id)
         self.dams_cli.assign_data_source_to_data_model(data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id)
         self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
-        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
-        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=eda_inst_id)
+        self.dams_cli.assign_external_data_agent_to_data_model(external_data_agent_id=eda_id, data_source_model_id=ext_dsrc_model_id)
+        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=eda_id, agent_instance_id=eda_inst_id)
 
         # Generate the data product and associate it to the ExternalDataset
         dprod = DataProduct(name='hfr_product', description='raw hfr product')
