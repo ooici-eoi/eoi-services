@@ -125,33 +125,65 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
                 attributes.append(att)
 
     def has_new_data(self, **kwargs):
-        result = False
+        if 'url' in self._ext_dataset_res.update_description.parameters:
+            url = self._ext_dataset_res.update_description.parameters['url']
+        else:
+            return True
 
-        if not 'url' in kwargs:
-            return result
+        if 'new_data_check' in self._ext_dataset_res.update_description.parameters:
+            list_of_previous_files = self._ext_dataset_res.update_description.parameters['new_data_check']
+        else:
+            return True
 
-        #TODO: need to get list of previous files from couch, instead of passing in as parameter
-        if not 'previous_files' in kwargs:
-            return result
+        log.debug('>>>previous files: (%s)\n%s' % (type(list_of_previous_files), list_of_previous_files))
 
-        url = kwargs['url']
-        list_of_previous_files = kwargs['previous_files']
-
+        # Obtain the current list of files from the source
         parser = AnchorParser()
         data = urllib.urlopen(url).read()
         parser.feed(data)
-        directory_names = parser._directory_names
-        for dir_name in directory_names:
-            parser2 = AnchorParser()
-            data2 = urllib.urlopen(url + '/' + dir_name).read()
-            parser2.feed(data2)
+        file_names = parser._link_names
 
-            file_names = parser2._link_names
-            for file_name in file_names:
-                file_url = url + dir_name + file_name
-                if not file_url in list_of_previous_files:
-                    list_of_previous_files.append(file_url)
-                    result = True
+        log.debug('>>>current files:\n%s' % file_names)
+
+        # If the first name in the list of 'new' files is not in the old list, assume new data is present
+        if not file_names[0] in list_of_previous_files:
+            return True
+
+        # Find the index in the 'old' array that matches the first value of the 'new' array and trim the 'old' array
+        # Avoids the issue of 'windowed' data (old items removed)
+        sidx = list_of_previous_files.index(file_names[0])
+        list_of_previous_files = list_of_previous_files[sidx:]
+
+        if list_of_previous_files == file_names:
+            return False
+
+        return True
+
+#        if not 'url' in kwargs:
+#            return result
+#
+#        #TODO: need to get list of previous files from couch, instead of passing in as parameter
+#        if not 'previous_files' in kwargs:
+#            return result
+#
+#        url = kwargs['url']
+#        list_of_previous_files = kwargs['previous_files']
+#
+#        parser = AnchorParser()
+#        data = urllib.urlopen(url).read()
+#        parser.feed(data)
+#        directory_names = parser._directory_names
+#        for dir_name in directory_names:
+#            parser2 = AnchorParser()
+#            data2 = urllib.urlopen(url + '/' + dir_name).read()
+#            parser2.feed(data2)
+#
+#            file_names = parser2._link_names
+#            for file_name in file_names:
+#                file_url = url + dir_name + file_name
+#                if not file_url in list_of_previous_files:
+#                    list_of_previous_files.append(file_url)
+#                    result = True
 
         #TODO: need to store the list of files somewhere for next time
 
