@@ -182,7 +182,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         # Generate the data product and associate it to the ExternalDataset
         dprod = DataProduct(name='ncom_product', description='raw ncom product')
-        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod, source_resource_id=ds_id)
+        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod)
 
         self.dams_cli.assign_data_product(input_resource_id=ds_id, data_product_id=dproduct_id, create_stream=True)
 
@@ -242,7 +242,7 @@ class TestIntExternalObservatoryAgentService(IonIntegrationTestCase):
 
         # Generate the data product and associate it to the ExternalDataset
         dprod = DataProduct(name='hfr_product', description='raw hfr product')
-        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod, source_resource_id=ds_id)
+        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod)
 
         self.dams_cli.assign_data_product(input_resource_id=ds_id, data_product_id=dproduct_id, create_stream=True)
 
