@@ -71,12 +71,12 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 
         return self._worker_clients[resource_id]
 
-    def _get_worker(self, resource_id=''):
+    def get_worker(self, resource_id=''):
         return self._spawn_worker(resource_id=resource_id)
 
     def execute(self, resource_id="", command=None):
         if resource_id:
-            cli, proc_name, pid, queue_id = self._get_worker(resource_id)
+            cli, proc_name, pid, queue_id = self.get_worker(resource_id)
             if cli is not None:
                 log.debug("Using ResourceAgentClient: res_id=%s" % cli.resource_id)
                 return cli.execute(command=command)
@@ -87,7 +87,7 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 
     def get_capabilities(self, resource_id="", capability_types=[]):
         if resource_id:
-            cli, proc_name, pid, queue_id = self._get_worker(resource_id)
+            cli, proc_name, pid, queue_id = self.get_worker(resource_id)
             if cli is not None:
                 log.debug("Using ResourceAgentClient: res_id=%s" % cli.resource_id)
                 return cli.get_capabilities(capability_types=capability_types)
