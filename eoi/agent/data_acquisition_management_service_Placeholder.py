@@ -18,6 +18,7 @@ COMP2 = "comp2"
 COADS = "coads"
 NCOM = "ncom"
 NAVO_GLIDER_LOCAL = "navo_glider_local"
+USGS = "usgs"
 
 class DataAcquisitionManagementServicePlaceholder:
 
@@ -110,6 +111,8 @@ class DataAcquisitionManagementServicePlaceholder:
             pass
         elif ds_id == NAVO_GLIDER_LOCAL:
             pass
+        elif ds_id == USGS:
+            pass
         else:
             return None
 
@@ -194,6 +197,11 @@ class DataAcquisitionManagementServicePlaceholder:
             ext_ds.dataset_description.parameters["meridional_dimension"] = "lat"
         elif ds_id == NAVO_GLIDER_LOCAL:
             ext_ds.dataset_description.parameters["dataset_path"] = CWD + "/test_data/p5150001.nc"
+            ext_ds.dataset_description.parameters["temporal_dimension"] = "time"
+            ext_ds.dataset_description.parameters["zonal_dimension"] = "lon"
+            ext_ds.dataset_description.parameters["meridional_dimension"] = "lat"
+        elif ds_id == USGS:
+            ext_ds.dataset_description.parameters["dataset_path"] = CWD + "/test_data/usgs.nc"
             ext_ds.dataset_description.parameters["temporal_dimension"] = "time"
             ext_ds.dataset_description.parameters["zonal_dimension"] = "lon"
             ext_ds.dataset_description.parameters["meridional_dimension"] = "lat"

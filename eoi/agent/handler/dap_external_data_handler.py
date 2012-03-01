@@ -98,7 +98,8 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         if var_name is None:
             vars = self._ds.variables.keys()
         else:
-            vars = [var_name]
+            if not isinstance(var_name, list): var_name = [var_name]
+            vars = var_name
 
         if not isinstance(slice_, tuple): slice_ = (slice_,)
 
