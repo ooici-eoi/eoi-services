@@ -16,7 +16,7 @@ import numpy
 from numpy import array
 
 
-@attr('UNIT', group='eoi')
+@attr('UNIT', group='eoi-hdlr')
 class TestDapExternalDataHandler(PyonTestCase):
 
     #_dsh_list = {}
@@ -398,16 +398,37 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertTrue(res)
 
     def test_has_new_data_false(self):
+        # 'Old' times are the same as the current set
         timesteps = array([1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600,
-                     1322719200, 1322722799, 1322726400, 1322730000])
+                           1322719200, 1322722799, 1322726400, 1322730000])
         dsh_1 = self._dsh_list["DS_BASE"][0]
-        res = dsh_1.has_new_data(timesteps=timesteps)
+        dsh_1._ext_dataset_res.update_description.parameters['new_data_check'] = timesteps
+        res = dsh_1.has_new_data()
+        self.assertFalse(res)
+
+    def test_has_new_data_false_windowed(self):
+        # Extra time at the beginning of the 'old' array
+        timesteps = array([1322694001, 1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600,
+                           1322719200, 1322722799, 1322726400, 1322730000])
+        dsh_1 = self._dsh_list["DS_BASE"][0]
+        dsh_1._ext_dataset_res.update_description.parameters['new_data_check'] = timesteps
+        res = dsh_1.has_new_data()
         self.assertFalse(res)
 
     def test_has_new_data_true(self):
+        # Fewer times in 'old' array than current
         timesteps = array([1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600])
         dsh_1 = self._dsh_list["DS_BASE"][0]
-        res = dsh_1.has_new_data(timesteps=timesteps)
+        dsh_1._ext_dataset_res.update_description.parameters['new_data_check'] = timesteps
+        res = dsh_1.has_new_data()
+        self.assertTrue(res)
+
+    def test_has_new_data_true_windowed(self):
+        # Fewer times in 'old' array than current and additional time at the beginning of 'old' array
+        timesteps = array([1322694001, 1322697600, 1322701199, 1322704800, 1322708400, 1322711999, 1322715600])
+        dsh_1 = self._dsh_list["DS_BASE"][0]
+        dsh_1._ext_dataset_res.update_description.parameters['new_data_check'] = timesteps
+        res = dsh_1.has_new_data()
         self.assertTrue(res)
 
     @unittest.skip("Needs refactoring -> ExternalDataRequest properties are wrong")
@@ -643,6 +664,11 @@ class TestDapExternalDataHandler(PyonTestCase):
         tvar = dsh_1.find_time_axis()
         self.assertTrue(isinstance(tvar, netCDF4.Variable))
 
+    def test_pprint_fingerprint(self):
+        fingerprint = self._dsh_list['DS_BASE'][0]._pprint_fingerprint()
+        print type(fingerprint)
+        self.assertTrue(type(fingerprint) in [str, unicode])
+
     def test_scan(self):
         print 'test_scan'
         scan_results = self._dsh_list["DS_BASE"][0].scan()
@@ -652,46 +678,3 @@ class TestDapExternalDataHandler(PyonTestCase):
         self.assertFalse(scan_results['variables'] is None)
         self.assertFalse(scan_results['attributes'] is None)
         self.assertFalse(scan_results['dimensions'] is None)
-
-@attr('INT', group='eoi')
-class TestIntDapExternalDataHandler(IonIntegrationTestCase):
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
-        #### Tests
-    #    @unittest.skip("for now")
-    def test_get_signature(self):
-        # TODO: Replace this placeholder with appropriate service call(s)
-        damsP = DataAcquisitionManagementServicePlaceholder()
-        dsh = damsP.get_data_handler(ds_id=HFR)
-
-        fingerprint = dsh.get_fingerprint()
-
-        # The signature for this particular dataset should always be 4562 characters in length (even though the values themselves will change)
-        self.assertTrue(len(str(fingerprint)) == 4562)
-
-
-    #    @unittest.skip("for now")
-    def test_has_data_changed_false(self):
-        # TODO: Replace this placeholder with appropriate service call(s)
-        damsP = DataAcquisitionManagementServicePlaceholder()
-        dsh = damsP.get_data_handler(ds_id=HFR)
-
-        # Get the signature
-        fingerprint = dsh.get_fingerprint()
-
-        # Set the last_signature == current signature
-
-        self.assertFalse(dsh.has_data_changed(fingerprint))
-
-    #    @unittest.skip("for now")
-    def test_has_new_data_initial(self):
-        # TODO: Replace this placeholder with appropriate service call(s)
-        damsP = DataAcquisitionManagementServicePlaceholder()
-        dsh = damsP.get_data_handler(ds_id=HFR)
-
-        self.assertTrue(dsh.has_data_changed())

@@ -132,17 +132,40 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         return
 
     def has_new_data(self, **kwargs):
-        result = False
+        if 'new_data_check' in self._ext_dataset_res.update_description.parameters:
+            old_new_data = self._ext_dataset_res.update_description.parameters['new_data_check']
+        else:
+            # No data in new_data_check - assume new data (probably initial acquisition)
+            return True
 
-        if not 'timesteps' in kwargs:
-            return result
+        # Get the new array of times from the dataset
+        timearr = self.find_time_axis()[:]
+        # Find the index in the 'old' array that matches the first value of the 'new' array and trim the 'old' array
+        # Avoids the issue of 'windowed' data (old items removed)
+        sidx=numpy.where(old_new_data==timearr[0])[0]
+        if sidx.size == 0:
+            # the first time in the new array wasn't present in the old array - assume new data
+            return True
 
-        timevar = self.find_time_axis()
-        timesteps = kwargs['timesteps']
+        old_new_data=old_new_data[sidx[0]:]
 
-        result = not numpy.array_equal(timevar[:], timesteps)
+        log.debug('>>>> old: %s' % old_new_data)
+        log.debug('>>>> new: %s' % timearr)
 
-        return result
+        if numpy.array_equal(timearr, old_new_data):
+            return False
+
+        return True
+
+#        if not 'timesteps' in kwargs:
+#            return result
+#
+#        timevar = self.find_time_axis()
+#        timesteps = kwargs['timesteps']
+#
+#        result = not numpy.array_equal(timevar[:], timesteps)
+#
+#        return result
 
     def acquire_new_data(self):
         tvar = self.find_time_axis()

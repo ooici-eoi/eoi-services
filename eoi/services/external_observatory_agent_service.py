@@ -11,6 +11,7 @@ __author__ = 'Christopher Mueller'
 __licence__ = 'Apache 2.0'
 
 from mock import Mock
+from pyon.agent.agent import ResourceAgentClient
 from pyon.net.endpoint import ProcessRPCClient
 from pyon.public import log
 from pyon.core.exception import IonException
@@ -52,7 +53,7 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
         if resource_id in self._worker_clients:
             (rpc_cli, proc_name, pid, queue_id) = self._worker_clients[resource_id]
             log.debug("Found worker process for resource_id=%s ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (resource_id, proc_name, pid, queue_id))
-            return True
+            return rpc_cli, proc_name, pid, queue_id
 
 #        config = {'agent':{'dataset_id': resource_id}}
         config = {}
@@ -63,20 +64,22 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
         queue_id = "%s.%s" % (self.container.id, pid)
         log.debug("Spawned worker process for resource_id=%s ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (resource_id, proc_name, pid, queue_id))
 
-        self._worker_clients[resource_id] = (ProcessRPCClient(name=queue_id, process=self), proc_name, pid, queue_id)
+        cli=ResourceAgentClient(resource_id, name=pid, process=self)
 
-        return True
+#        self._worker_clients[resource_id] = (ProcessRPCClient(name=queue_id, process=self), proc_name, pid, queue_id)
+        self._worker_clients[resource_id] = (cli, proc_name, pid, queue_id)
+
+        return self._worker_clients[resource_id]
 
     def get_worker(self, resource_id=''):
         return self._spawn_worker(resource_id=resource_id)
 
     def execute(self, resource_id="", command=None):
         if resource_id:
-            cli, proc_name, pid, queue_id = self._worker_clients[resource_id]
+            cli, proc_name, pid, queue_id = self.get_worker(resource_id)
             if cli is not None:
-                exe = external_observatory_agent_execute_in(resource_id=resource_id, command=command)
-                log.debug("execute: eoa_execute_in=%s" % exe)
-                return cli.request(exe, op='execute')
+                log.debug("Using ResourceAgentClient: res_id=%s" % cli.resource_id)
+                return cli.execute(command=command)
             else:
                 raise IonException("No worker for resource_id=%s" % resource_id)
         else:
@@ -84,11 +87,10 @@ class ExternalObservatoryAgentService(BaseExternalObservatoryAgentService):
 
     def get_capabilities(self, resource_id="", capability_types=[]):
         if resource_id:
-            cli, proc_name, pid, queue_id = self._worker_clients[resource_id]
+            cli, proc_name, pid, queue_id = self.get_worker(resource_id)
             if cli is not None:
-                exe = external_observatory_agent_get_capabilities_in(resource_id=resource_id, capability_types=capability_types)
-                log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-                return cli.request(exe, op='get_capabilities')
+                log.debug("Using ResourceAgentClient: res_id=%s" % cli.resource_id)
+                return cli.get_capabilities(capability_types=capability_types)
             else:
                 raise IonException("No worker for resource_id=%s" % resource_id)
         else:

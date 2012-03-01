@@ -11,7 +11,7 @@ import numpy
 import tempfile
 
 
-@attr('UNIT', group='eoi')
+@attr('UNIT', group='eoi-hdlr')
 class TestHfrRadialDataHandler(PyonTestCase):
 
     def setUp(self):
@@ -274,14 +274,86 @@ class TestHfrRadialDataHandler(PyonTestCase):
         self.assertTrue(self._datasets['mod_gatt'].has_data_changed(fingerprint))
 
     def test_has_new_data_true(self):
-        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/'
-        previous_files = ['http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0000.ruv',
-                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0100.ruv',
-                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0200.ruv',
-                                     'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_12_0300.ruv']
+        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
+        # Obtain the current list of files from the source
+        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
+        import urllib
+        parser = AnchorParser()
+        data = urllib.urlopen(url).read()
+        parser.feed(data)
+        previous_files = parser._link_names
+        # Remove the last item in the list to simulate a 'new' file being present
+        previous_files.remove(previous_files[-1])
 
-        res = self._datasets['base'].has_new_data(url=url, previous_files=previous_files)
+        # Assign the url (temporary measure) and file list to the update_description object
+        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
+        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+
+        # Perform the has_new_data test
+        res = self._datasets['base'].has_new_data()
         self.assertTrue(res)
+
+    def test_has_new_data_true_windowed(self):
+        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
+        # Obtain the current list of files from the source
+        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
+        import urllib
+        parser = AnchorParser()
+        data = urllib.urlopen(url).read()
+        parser.feed(data)
+        previous_files = parser._link_names
+        # Add a 'dummy' item in the first spot in the list to simulate the file being removed from the server
+        previous_files.insert(0, 'I_was_removed')
+        # Remove the last item in the list to simulate a 'new' file being present
+        previous_files.remove(previous_files[-1])
+
+        # Assign the url (temporary measure) and file list to the update_description object
+        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
+        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+
+        # Perform the has_new_data test
+        res = self._datasets['base'].has_new_data()
+        self.assertTrue(res)
+
+#    @unittest.skip("")
+    def test_has_new_data_false(self):
+        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
+        # Obtain the current list of files from the source
+        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
+        import urllib
+        parser = AnchorParser()
+        data = urllib.urlopen(url).read()
+        parser.feed(data)
+        previous_files = parser._link_names
+
+        # Assign the url (temporary measure) and file list to the update_description object
+        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
+        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+
+        # Perform the has_new_data test
+        res = self._datasets['base'].has_new_data()
+        self.assertFalse(res)
+
+#    @unittest.skip("")
+    def test_has_new_data_false_windowed(self):
+        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
+        # Obtain the current list of files from the source
+        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
+        import urllib
+        parser = AnchorParser()
+        data = urllib.urlopen(url).read()
+        parser.feed(data)
+        previous_files = parser._link_names
+        # Add a 'dummy' item in the first spot in the list to simulate the file being removed from the server
+        previous_files.insert(0, 'I_was_removed')
+
+        # Assign the url (temporary measure) and file list to the update_description object
+        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
+        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+
+        # Perform the has_new_data test
+        res = self._datasets['base'].has_new_data()
+        self.assertFalse(res)
 
     def test_get_fingerprint(self):
         self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE

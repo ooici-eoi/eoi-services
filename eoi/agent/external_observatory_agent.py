@@ -60,15 +60,14 @@ class ExternalObservatoryAgent(ResourceAgent):
         mdl_id = mdl_acc[0].o
         log.debug("Found associated ExternalDataSourceModel: %s" % mdl_id)
 
-        dprod_id, _ = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=PRED.hasDataProducer, object_type=RT.DataProducer, id_only=True)
+        dprod_id, _ = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=PRED.hasOutputProduct, object_type=RT.DataProduct, id_only=True)
         dprod_id = dprod_id[0]
-        log.debug("Found associated DataProducer: %s" % dprod_id)
+        log.debug("Found associated DataProduct: %s" % dprod_id)
 
         stream_id, _ = self.resreg_cli.find_objects(subject=dprod_id, predicate=PRED.hasStream, object_type=RT.Stream, id_only=True)
+        log.debug(">>>>> stream_id: %s" % stream_id)
         stream_id = stream_id[0]
         log.debug("Found associated Stream: %s" % stream_id)
-
-
 
         # configure the stream publisher
         log.debug("Configure StreamPublisher")
@@ -129,8 +128,8 @@ class ExternalObservatoryAgent(ResourceAgent):
     def rcmd_get_attributes(self, *args, **kwargs):
         return self._data_handler.get_attributes(*args, **kwargs)
 
-    def rcmd_get_signature(self, *args, **kwargs):
-        return self._data_handler.get_signature(*args, **kwargs)
+    def rcmd_get_fingerprint(self, *args, **kwargs):
+        return self._data_handler.get_fingerprint(*args, **kwargs)
 
     def rcmd_compare(self, *args, **kwargs):
         return self._data_handler.compare(*args, **kwargs)

@@ -6,19 +6,26 @@
 @author Christopher Mueller
 @brief 
 """
-from pyon.net.endpoint import ProcessRPCClient
 
 __author__ = 'Christopher Mueller'
 __licence__ = 'Apache 2.0'
 
-from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
+#from interface.services.coi.iresource_registry_service import ResourceRegistryServiceClient
+from pyon.util.context import LocalContextMixin
 from interface.services.sa.idata_acquisition_management_service import DataAcquisitionManagementServiceClient
+from interface.services.sa.idata_product_management_service import DataProductManagementServiceClient
+from pyon.agent.agent import ResourceAgentClient
 from pyon.public import log, PRED
 from mock import Mock
+import unittest
 from nose.plugins.attrib import attr
 from pyon.util.int_test import IonIntegrationTestCase
-from interface.objects import ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, Stream, AgentCommand
+from interface.objects import ExternalDataSourceModel, ExternalDataset, ExternalDataProvider, DataSource, Institution, ContactInformation, DatasetDescription, UpdateDescription, AgentCommand, DataProduct
 from interface.messages import external_observatory_agent_execute_in, external_observatory_agent_get_capabilities_in
+
+class FakeProcess(LocalContextMixin):
+    name = ''
+    id='someid'
 
 @attr('INT', group='eoi-agt')
 class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
@@ -27,20 +34,22 @@ class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
         self._start_container()
         self.container.start_rel_from_url(rel_url='res/deploy/r2eoi.yml')
 
-        self.rr_cli = ResourceRegistryServiceClient()
         self.dams_cli = DataAcquisitionManagementServiceClient()
+        self.dpms_cli = DataProductManagementServiceClient()
 
         self._setup_ncom()
-        proc_name = self.ncom_ds_id+"_worker"
+        proc_name = self.ncom_ds_id+'_worker'
         config = {}
         config['process']={'name':proc_name,'type':'agent'}
         config['process']['eoa']={'dataset_id':self.ncom_ds_id}
         pid = self.container.spawn_process(name=proc_name, module='eoi.agent.external_observatory_agent', cls='ExternalObservatoryAgent', config=config)
+
         queue_id = "%s.%s" % (self.container.id, pid)
 
         log.debug("Spawned worker process ==> proc_name: %s\tproc_id: %s\tqueue_id: %s" % (proc_name, pid, queue_id))
 
-        self._agent_cli = ProcessRPCClient(name=queue_id, process=self.container)
+        self._agent_cli = ResourceAgentClient(self.ncom_ds_id, name=pid, process=FakeProcess())
+        log.debug("Got a ResourceAgentClient: res_id=%s" % self._agent_cli.resource_id)
 
     def _setup_ncom(self):
         # TODO: some or all of this (or some variation) should move to DAMS
@@ -76,73 +85,70 @@ class TestIntExternalObservatoryAgent(IonIntegrationTestCase):
         dsrc_model.data_handler_class = "DapExternalDataHandler"
 
         ## Run everything through DAMS
-        #TODO: Uncomment when CRUD methods in DAMS are implemented
-        #        self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
-        #        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
-        #        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ds_id = self.ncom_ds_id = self.dams_cli.create_external_dataset(external_dataset=dset)
+        ext_dprov_id = self.dams_cli.create_external_data_provider(external_data_provider=dprov)
+        ext_dsrc_id = self.dams_cli.create_data_source(data_source=dsrc)
+        ext_dsrc_model_id = self.dams_cli.create_external_data_source_model(dsrc_model)
 
-        self.ncom_ds_id, _ = self.rr_cli.create(dset)
-        ext_dprov_id, _ = self.rr_cli.create(dprov)
-        ext_dsrc_id, _ = self.rr_cli.create(dsrc)
-        #TODO: this needs to be added to DAMS
-        ext_dsrc_model_id, _ = self.rr_cli.create(dsrc_model)
+        # Register the ExternalDataset
+        dproducer_id = self.dams_cli.register_external_data_set(external_dataset_id=ds_id)
 
         ## Associate everything
-        self.rr_cli.create_association(self.ncom_ds_id, PRED.hasSource, ext_dsrc_id)
-        log.debug("Associated ExternalDataset %s with DataSource %s" % (self.ncom_ds_id, ext_dsrc_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasProvider, ext_dprov_id)
-        log.debug("Associated DataSource %s with ExternalDataProvider %s" % (ext_dsrc_id, ext_dprov_id))
-        self.rr_cli.create_association(ext_dsrc_id, PRED.hasModel, ext_dsrc_model_id)
-        log.debug("Associated DataSource %s with ExternalDataSourceModel %s" % (ext_dsrc_id, ext_dsrc_model_id))
-        data_prod_id = self.dams_cli.register_external_data_set(self.ncom_ds_id)
-        log.debug("Registered ExternalDataset {%s}: DataProducer ID = %s" % (self.ncom_ds_id, data_prod_id))
+        # Convenience method
+#        self.dams_cli.assign_eoi_resources(external_data_provider_id=ext_dprov_id, data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id, external_dataset_id=ds_id, external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+
+        # Or using each method
+        self.dams_cli.assign_data_source_to_external_data_provider(data_source_id=ext_dsrc_id, external_data_provider_id=ext_dprov_id)
+        self.dams_cli.assign_data_source_to_data_model(data_source_id=ext_dsrc_id, data_source_model_id=ext_dsrc_model_id)
+        self.dams_cli.assign_external_dataset_to_data_source(external_dataset_id=ds_id, data_source_id=ext_dsrc_id)
+#        self.dams_cli.assign_external_dataset_to_agent_instance(external_dataset_id=ds_id, agent_instance_id=self.eda_inst_id)
+#        self.dams_cli.assign_external_data_agent_to_agent_instance(external_data_agent_id=self.eda_id, agent_instance_id=self.eda_inst_id)
+
+        # Generate the data product and associate it to the ExternalDataset
+        dprod = DataProduct(name='ncom_product', description='raw ncom product')
+        dproduct_id = self.dpms_cli.create_data_product(data_product=dprod)
+
+        self.dams_cli.assign_data_product(input_resource_id=ds_id, data_product_id=dproduct_id, create_stream=True)
+
 
 ########## Tests ##########
 
 #    @unittest.skip("")
     def test_get_capabilities(self):
-        res_id = self.ncom_ds_id
-
         # Get all the capabilities
-        exe = external_observatory_agent_get_capabilities_in(resource_id=res_id, capability_types=None)
-        log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-        caps = self._agent_cli.request(exe, op='get_capabilities')
+        caps = self._agent_cli.get_capabilities()
         log.debug("all capabilities: %s" % caps)
-        self.assertEqual(type(caps), list)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
 
-        exe = external_observatory_agent_get_capabilities_in(resource_id=res_id, capability_types=['RES_CMD'])
-        log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-        caps = self._agent_cli.request(exe, op='get_capabilities')
+        caps = self._agent_cli.get_capabilities(capability_types=['RES_CMD'])
+        log.debug("resource commands: %s" % caps)
+        lst=[['RES_CMD', 'acquire_data'], ['RES_CMD', 'acquire_data_by_request'],
+            ['RES_CMD', 'acquire_new_data'], ['RES_CMD', 'close'], ['RES_CMD', 'compare'],
+            ['RES_CMD', 'get_attributes'], ['RES_CMD', 'get_fingerprint'], ['RES_CMD', 'get_status'],
+            ['RES_CMD', 'has_new_data']]
+        self.assertEquals(caps, lst)
+
+        caps = self._agent_cli.get_capabilities(capability_types=['RES_PAR'])
         log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
-        exe = external_observatory_agent_get_capabilities_in(resource_id=res_id, capability_types=['RES_PAR'])
-        log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-        caps = self._agent_cli.request(exe, op='get_capabilities')
-        log.debug("resource parameters: %s" % caps)
+        caps = self._agent_cli.get_capabilities(capability_types=['AGT_CMD'])
+        log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
-        exe = external_observatory_agent_get_capabilities_in(resource_id=res_id, capability_types=['AGT_CMD'])
-        log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-        caps = self._agent_cli.request(exe, op='get_capabilities')
-        log.debug("agent commands: %s" % caps)
-        self.assertEqual(type(caps), list)
-
-        exe = external_observatory_agent_get_capabilities_in(resource_id=res_id, capability_types=['AGT_PAR'])
-        log.debug("get_capabilities: eoa_get_caps_in=%s" % exe)
-        caps = self._agent_cli.request(exe, op='get_capabilities')
-        log.debug("agent parameters: %s" % caps)
+        caps = self._agent_cli.get_capabilities(capability_types=['AGT_PAR'])
+        log.debug("resource commands: %s" % caps)
         self.assertEqual(type(caps), list)
 
 #    @unittest.skip("")
     def test_execute_get_attrs(self):
-        res_id = self.ncom_ds_id
-
         cmd = AgentCommand(command_id="111", command="get_attributes")
         log.debug("Execute AgentCommand: %s" % cmd)
-        exe = external_observatory_agent_execute_in(resource_id=res_id, command=cmd)
-        log.debug("execute: eoa_execute_in=%s" % exe)
-        ret = self._agent_cli.request(exe, op='execute')
+        ret = self._agent_cli.execute(cmd)
         log.debug("Returned: %s" % ret)
         self.assertEquals(ret.status, 0)
         self.assertTrue(type(ret.result), dict)
