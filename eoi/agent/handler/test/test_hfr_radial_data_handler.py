@@ -11,13 +11,14 @@ import numpy
 import tempfile
 
 
-@attr('UNIT', group='eoi-hdlr')
+@attr('UNIT', group='eoi-hfr')
 class TestHfrRadialDataHandler(PyonTestCase):
 
     def setUp(self):
 
         self._datasets = {}
 
+        '''
         file = self._create_tst_data_set('base')
 
         ext_ds = ExternalDataset(name="base", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
@@ -61,6 +62,19 @@ class TestHfrRadialDataHandler(PyonTestCase):
         ext_ds.dataset_description.parameters["dataset_path"] = file
         ext_ds.dataset_description.parameters["temporal_dimension"] = 'time'
         self._datasets['mod_varatt'] = HfrRadialDataHandler(data_source=file, ext_dataset=ext_ds)
+        '''
+
+        ext_ds = ExternalDataset(name="ASSA", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
+        ext_ds.dataset_description.parameters["dataset_path"] = '/Users/timgiguere/Documents/temp/ASSA/'
+        ext_ds.dataset_description.parameters["temporal_dimension"] = 'time'
+        #self._datasets['ASSA'] = HfrRadialDataHandler(data_source='http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/', ext_dataset=ext_ds)
+        self._datasets['ASSA'] = HfrRadialDataHandler(data_source='/Users/timgiguere/Documents/temp/ASSA/', ext_dataset=ext_ds)
+
+        ext_ds = ExternalDataset(name="BELM", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
+        ext_ds.dataset_description.parameters["dataset_path"] = '/Users/timgiguere/Documents/temp/BELM/'
+        ext_ds.dataset_description.parameters["temporal_dimension"] = 'time'
+        #self._datasets['ASSA'] = HfrRadialDataHandler(data_source='http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/', ext_dataset=ext_ds)
+        self._datasets['BELM'] = HfrRadialDataHandler(data_source='/Users/timgiguere/Documents/temp/BELM/', ext_dataset=ext_ds)
 
         #file = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/RDLi_ASSA_2012_02_09_1100.ruv    '
         #ext_ds = ExternalDataset(name="remote", dataset_description=DatasetDescription(), update_description=UpdateDescription(), contact=ContactInformation())
@@ -71,12 +85,14 @@ class TestHfrRadialDataHandler(PyonTestCase):
         pass
 
     def tearDown(self):
-        self._datasets['base'] = None
-        self._datasets['mod_gatt'] = None
-        self._datasets['new_gatt'] = None
-        self._datasets['mod_var'] = None
-        self._datasets['new_var'] = None
-        self._datasets['mod_varatt'] = None
+        #self._datasets['base'] = None
+        #self._datasets['mod_gatt'] = None
+        #self._datasets['new_gatt'] = None
+        #self._datasets['mod_var'] = None
+        #self._datasets['new_var'] = None
+        #self._datasets['mod_varatt'] = None
+        self._datasets['ASSA'] = None
+        self._datasets['BELM'] = None
         pass
 
     def _create_tst_data_set(self, key):
@@ -248,51 +264,75 @@ class TestHfrRadialDataHandler(PyonTestCase):
         pass
 
     def test_get_attributes(self):
-        attributes = self._datasets['base'].get_attributes()
-        #make sure attributes match up here?
+        attributes = self._datasets['ASSA'].get_attributes()
+        #test that we got something back?
+
+    def test_get_one_attribute(self):
+        attributes = self._datasets['ASSA'].get_attributes(scope='LOND')
+        #test that we got something back?
+
+    def test_acquire_data_time(self):
+        data_iter = self._datasets['ASSA'].acquire_data(var_name='time')
+        for vn, slice_, rng, data in data_iter:
+            self.assertTrue(isinstance(slice_, tuple))
+            self.assertTrue(isinstance(rng, tuple))
+            self.assertTrue(isinstance(data, numpy.ndarray))
 
     def test_acquire_data(self):
-        data_iter = self._datasets['base'].acquire_data()
+        data_iter = self._datasets['ASSA'].acquire_data()
         for vn, slice_, rng, data in data_iter:
             self.assertTrue(isinstance(slice_, tuple))
             self.assertTrue(isinstance(rng, tuple))
             self.assertTrue(isinstance(data, numpy.ndarray))
 
     def test_acquire_data_one_variable(self):
-        data_iter = self._datasets['base'].acquire_data(var_name='LOND')
+        data_iter = self._datasets['ASSA'].acquire_data(var_name='LOND')
         for vn, slice_, rng, data in data_iter:
             self.assertTrue(isinstance(slice_, tuple))
             self.assertTrue(isinstance(rng, tuple))
             self.assertTrue(isinstance(data, numpy.ndarray))
 
+    def test_acquire_data_many_variables(self):
+        data_iter = self._datasets['ASSA'].acquire_data(var_name=['LOND','LATD','VELU','VELV'])
+        for vn, slice_, rng, data in data_iter:
+            self.assertTrue(isinstance(slice_, tuple))
+            self.assertTrue(isinstance(rng, tuple))
+            self.assertTrue(isinstance(data, numpy.ndarray))
+
+    def test_has_data_changed_no_fingerprint(self):
+        self.assertTrue(self._datasets['ASSA'].has_data_changed())
+
     def test_has_data_changed_true(self):
-        fingerprint = self._datasets['base'].get_fingerprint()
-        self.assertFalse(self._datasets['base'].has_data_changed(fingerprint))
+        fingerprint = self._datasets['ASSA'].get_fingerprint()
+        self.assertTrue(self._datasets['BELM'].has_data_changed(fingerprint))
 
     def test_has_data_changed_false(self):
-        fingerprint = self._datasets['base'].get_fingerprint()
-        self.assertTrue(self._datasets['mod_gatt'].has_data_changed(fingerprint))
+        fingerprint = self._datasets['ASSA'].get_fingerprint()
+        self.assertFalse(self._datasets['ASSA'].has_data_changed(fingerprint))
 
     def test_has_new_data_true(self):
-        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
-        # Obtain the current list of files from the source
-        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
-        import urllib
-        parser = AnchorParser()
-        data = urllib.urlopen(url).read()
-        parser.feed(data)
-        previous_files = parser._link_names
+        previous_files = os.listdir('/Users/timgiguere/Documents/temp/ASSA/')
+        try:
+            previous_files.remove('.DS_Store')
+        except:
+            pass
+
         # Remove the last item in the list to simulate a 'new' file being present
         previous_files.remove(previous_files[-1])
 
-        # Assign the url (temporary measure) and file list to the update_description object
-        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
-        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+        # Assign the file list to the update_description object
+        self._datasets['ASSA']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
 
         # Perform the has_new_data test
-        res = self._datasets['base'].has_new_data()
+        res = self._datasets['ASSA'].has_new_data()
         self.assertTrue(res)
 
+    def test_has_new_data_no_previous(self):
+        # Perform the has_new_data test
+        res = self._datasets['ASSA'].has_new_data()
+        self.assertTrue(res)
+
+    @unittest.skip("")
     def test_has_new_data_true_windowed(self):
         url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
         # Obtain the current list of files from the source
@@ -315,26 +355,22 @@ class TestHfrRadialDataHandler(PyonTestCase):
         res = self._datasets['base'].has_new_data()
         self.assertTrue(res)
 
-#    @unittest.skip("")
     def test_has_new_data_false(self):
-        url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
-        # Obtain the current list of files from the source
-        from eoi.agent.handler.hfr_radial_data_handler import AnchorParser
-        import urllib
-        parser = AnchorParser()
-        data = urllib.urlopen(url).read()
-        parser.feed(data)
-        previous_files = parser._link_names
+        previous_files = os.listdir('/Users/timgiguere/Documents/temp/ASSA/')
+        try:
+            previous_files.remove('.DS_Store')
+        except:
+            pass
 
-        # Assign the url (temporary measure) and file list to the update_description object
-        self._datasets['base']._ext_dataset_res.update_description.parameters['url'] = url
-        self._datasets['base']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
+        # Assign the file list to the update_description object
+        self._datasets['ASSA']._ext_dataset_res.update_description.parameters['new_data_check'] = previous_files
 
         # Perform the has_new_data test
-        res = self._datasets['base'].has_new_data()
+        res = self._datasets['ASSA'].has_new_data()
         self.assertFalse(res)
 
 #    @unittest.skip("")
+    @unittest.skip("")
     def test_has_new_data_false_windowed(self):
         url = 'http://marine.rutgers.edu/cool/maracoos/codar/ooi/radials/ASSA/'
         # Obtain the current list of files from the source
@@ -356,124 +392,65 @@ class TestHfrRadialDataHandler(PyonTestCase):
         self.assertFalse(res)
 
     def test_get_fingerprint(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
-        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
+        fingerprint = self._datasets['ASSA'].get_fingerprint(True)
         self.assertTrue(not len(fingerprint) == 0)
 
     def test_get_fingerprint_no_recalculate(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
-        fingerprint1 = self._datasets['base'].get_fingerprint(True) #initialize the fingerprint
-        fingerprint2 = self._datasets['base'].get_fingerprint(False) # make sure you get the same one back
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.NONE
+        fingerprint1 = self._datasets['ASSA'].get_fingerprint(True) #initialize the fingerprint
+        fingerprint2 = self._datasets['ASSA'].get_fingerprint(False) # make sure you get the same one back
         self.assertEqual(fingerprint1, fingerprint2)
 
     def test_get_fingerprint_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        fingerprint = self._datasets['ASSA'].get_fingerprint(True)
         self.assertTrue(not len(fingerprint) == 0)
 
     def test_get_fingerprint_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        fingerprint = self._datasets['base'].get_fingerprint(True)
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
+        fingerprint = self._datasets['ASSA'].get_fingerprint(True)
         self.assertTrue(not len(fingerprint) == 0)
 
+    def test_compare_no_fingerprint(self):
+        self.assertTrue(self._datasets['ASSA'].compare(None) is None)
+
     def test_compare_equal_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint = self._datasets['base'].get_fingerprint(True)
-        for x in self._datasets['base'].compare(fingerprint):
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        fingerprint = self._datasets['ASSA'].get_fingerprint(True)
+        for x in self._datasets['ASSA'].compare(fingerprint):
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
     def test_compare_equal_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint = self._datasets['base'].get_fingerprint(True)
-        for x in self._datasets['base'].compare(fingerprint):
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        fingerprint = self._datasets['ASSA'].get_fingerprint(True)
+        for x in self._datasets['ASSA'].compare(fingerprint):
             self.assertEqual(x.difference, CompareResultEnum.EQUAL)
 
-    def test_compare_mod_gatt_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['mod_gatt'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
+    def test_compare_full(self):
+        print 'test_compare_mod_gatt_full'
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        fingerprint1 = self._datasets['ASSA'].get_fingerprint(True)
+        self._datasets['BELM']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        for x in self._datasets['BELM'].compare(fingerprint1):
+            self.assertFalse(x.difference == CompareResultEnum.EQUAL)
 
-    def test_compare_mod_gatt_full_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_gatt'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.MOD_GATT or x.difference == CompareResultEnum.MOD_VAR)
+    def test_compare_full_first_last(self):
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
+        fingerprint1 = self._datasets['ASSA'].get_fingerprint(True)
+        self._datasets['BELM']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
+        for x in self._datasets['BELM'].compare(fingerprint1):
+            self.assertFalse(x.difference == CompareResultEnum.EQUAL)
 
-    def test_compare_mod_gatt_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_gatt'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.MOD_GATT)
-
-    def test_compare_new_gatt_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['new_gatt'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.NEW_GATT)
-
-    def test_compare_new_gatt_full_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_gatt'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.NEW_GATT or x.difference == CompareResultEnum.MOD_VAR)
-
-    def test_compare_new_gatt_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_gatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_gatt'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.NEW_GATT)
-
-    def test_compare_mod_varatt_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['mod_varatt'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
-
-    def test_compare_mod_varatt_full_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_varatt'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
-
-    def test_compare_mod_varatt_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['mod_varatt']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['mod_varatt'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.MOD_VARATT or x.difference == CompareResultEnum.MOD_VAR)
-
-    def test_compare_new_var_full(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        for x in self._datasets['new_var'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.NEW_VAR)
-
-    def test_compare_new_var_full_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FULL
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_var'].compare(fingerprint1):
-            self.assertTrue(x.difference == CompareResultEnum.NEW_VAR or x.difference == CompareResultEnum.MOD_VAR)
-
-    def test_compare_new_var_first_last(self):
-        self._datasets['base']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        fingerprint1 = self._datasets['base'].get_fingerprint(True)
-        self._datasets['new_var']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
-        for x in self._datasets['new_var'].compare(fingerprint1):
-            self.assertEqual(x.difference, CompareResultEnum.NEW_VAR)
+    def test_compare_first_last(self):
+        self._datasets['ASSA']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
+        fingerprint1 = self._datasets['ASSA'].get_fingerprint(True)
+        self._datasets['BELM']._ext_dataset_res.dataset_description.data_sampling = DatasetDescriptionDataSamplingEnum.FIRST_LAST
+        for x in self._datasets['BELM'].compare(fingerprint1):
+            self.assertFalse(x.difference == CompareResultEnum.EQUAL)
 
     def test_scan(self):
-        scan_results = self._datasets['base'].scan()
+        scan_results = self._datasets['ASSA'].scan()
         self.assertTrue('variables' in scan_results)
         self.assertTrue('attributes' in scan_results)
         self.assertTrue('dimensions' in scan_results)

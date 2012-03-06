@@ -8,6 +8,8 @@ from eoi.agent.handler.ascii_external_data_handler import *
 import numpy
 from HTMLParser import HTMLParser
 import urllib
+import datetime
+import os
 
 class AnchorParser(HTMLParser):
 
@@ -42,11 +44,46 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
         AsciiExternalDataHandler.__init__(self, data_provider, data_source, ext_dataset, *args, **kwargs)
         #TODO: Verify parameters as appropriate IonObjects
 
-        self._variables = []
+        self._files = []
+        self._variables = {}
         self._global_attributes = []
         self._data_source = data_source
-        self._load_attributes(data_source)
+        self._time_steps = self._load_time_steps(data_source)
+        for file_name in self._files:
+            self._load_attributes(data_source + file_name)
         self._comments = '%'
+
+    def _load_time_steps(self, data_source):
+        if data_source.startswith('http'):
+            parser = AnchorParser()
+            data = urllib.urlopen(data_source).read()
+            parser.feed(data)
+            self._files = parser._link_names
+        else:
+            self._files = os.listdir(data_source)
+            try:
+                self._files.remove('.DS_Store')
+            except:
+                pass
+
+        newvar = Variable()
+        newvar.index_key = 'time'
+        newvar.name = 'time'
+        newvar.index_key = '-1'
+        newvar.attributes = []
+        self._variables['time'] = newvar
+
+        result = []
+
+        for file_name in self._files:
+            #RDLi_ASSA_2012_03_01_0000.ruv
+            fname = file_name.split('.')[0]
+            splt = fname.split('_')
+            hr = int(splt[-1][0:2])
+            mn = int(splt[-1][2:4])
+            result.append(datetime.datetime(year=int(splt[2]), month=int(splt[3]), day=int(splt[4]), hour=hr, minute=mn))
+
+        return result
 
     def _load_attributes(self, filename=''):
         import urllib
@@ -69,19 +106,19 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
                 elif not variables_populated:
                     units = parsed_line.split()
                     units.reverse()
-                    index = 0
-                    for var in self._variables:
-                        var.units = units.pop()
-                        attr = Attribute()
-                        attr.name = 'units'
-                        attr.value = var.units
-                        var.attributes.append(attr)
-                        attr = Attribute()
-                        attr.name = 'long_name'
-                        attr.value = column_names.pop()
-                        if attr.value == 'U' or attr.value == 'V' or attr.value == 'X' or attr.value == 'Y':
-                            attr.value += ' ' + column_names.pop()
-                        var.attributes.append(attr)
+                    for key,var in self._variables.iteritems():
+                        if key != 'time':
+                            var.units = units.pop()
+                            attr = Attribute()
+                            attr.name = 'units'
+                            attr.value = var.units
+                            var.attributes.append(attr)
+                            attr = Attribute()
+                            attr.name = 'long_name'
+                            attr.value = column_names.pop()
+                            if attr.value == 'U' or attr.value == 'V' or attr.value == 'X' or attr.value == 'Y':
+                                attr.value += ' ' + column_names.pop()
+                            var.attributes.append(attr)
                     variables_populated = True
 
             if line.startswith('%TableType:'):
@@ -115,8 +152,9 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
                     var.attributes = []
                     var.name = col
                     var.index_key = str(index)
-                    self._variables.append(var)
-                    index += 1
+                    if not var.name in self._variables:
+                        self._variables[var.name] = var
+                        index += 1
         elif not parsed_line[0].startswith('Table'):
             if not parsed_line[2] == '':
                 att = Attribute()
@@ -125,11 +163,6 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
                 attributes.append(att)
 
     def has_new_data(self, **kwargs):
-        if 'url' in self._ext_dataset_res.update_description.parameters:
-            url = self._ext_dataset_res.update_description.parameters['url']
-        else:
-            return True
-
         if 'new_data_check' in self._ext_dataset_res.update_description.parameters:
             list_of_previous_files = self._ext_dataset_res.update_description.parameters['new_data_check']
         else:
@@ -137,11 +170,17 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
 
         log.debug('>>>previous files: (%s)\n%s' % (type(list_of_previous_files), list_of_previous_files))
 
-        # Obtain the current list of files from the source
-        parser = AnchorParser()
-        data = urllib.urlopen(url).read()
-        parser.feed(data)
-        file_names = parser._link_names
+        if self._data_source.startswith('http'):
+            parser = AnchorParser()
+            data = urllib.urlopen(self._data_source).read()
+            parser.feed(data)
+            file_names = parser._link_names
+        else:
+            file_names = os.listdir(self._data_source)
+            try:
+                file_names.remove('.DS_Store')
+            except:
+                pass
 
         log.debug('>>>current files:\n%s' % file_names)
 
@@ -186,9 +225,6 @@ class HfrRadialDataHandler(AsciiExternalDataHandler):
 #                    result = True
 
         #TODO: need to store the list of files somewhere for next time
-
-        return result
-
 
     #def acquire_data_by_request(self, request=None, **kwargs):
     #    """

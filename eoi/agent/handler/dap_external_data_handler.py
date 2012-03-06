@@ -38,7 +38,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
         self._tvar = None
 
     def _load_variables(self):
-        self._variables = []
+        self._variables = {}
         for vn in self._ds.variables.keys():
             var = self._ds.variables[vn]
             newvar = Variable()
@@ -53,7 +53,7 @@ class DapExternalDataHandler(BaseExternalDataHandler):
                 attr.name = ak
                 attr.value = att
                 newvar.attributes.append(attr)
-            self._variables.append(newvar)
+            self._variables[vn] = newvar
 
     def _load_dimensions(self):
         self._dimensions = []

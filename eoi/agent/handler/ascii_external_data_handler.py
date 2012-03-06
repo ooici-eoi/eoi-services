@@ -13,6 +13,8 @@ class AsciiExternalDataHandler(BaseExternalDataHandler):
 
         self._comments = ''
         self._data_source = ''
+        self._time_steps = None
+        self._files = None
 
     def get_attributes(self, scope=None):
         """
@@ -24,36 +26,52 @@ class AsciiExternalDataHandler(BaseExternalDataHandler):
         if scope is None:
             result = self._global_attributes
         else:
-            for var in self._variables:
-                if var.name == scope:
-                    result = var.attributes
+            for key, variable in self._variables.iteritems():
+                if key == scope:
+                    result = variable.attributes
 
         return result
 
     def get_variable_data(self, key=''):
-        return numpy.genfromtxt(fname=self._data_source, comments=self._comments, usecols=(int(key)))
+        #TODO check if key is for time variable, return that data from array instead of file
+        #TODO return data from multiple files, covering more than one time step
+        if key == -1: #should be asking for the time variable
+            return numpy.asanyarray(self._time_steps)
+        else:
+            result = None
+            for f in self._files:
+                if result is None:
+                    result = numpy.genfromtxt(fname=self._data_source + f, comments=self._comments, usecols=(int(key)))
+                else:
+                    a = numpy.genfromtxt(fname=self._data_source + f, comments=self._comments, usecols=(int(key)))
+                    result = numpy.append(result, a)
+
+            return result
 
     def acquire_data(self, var_name=None, slice_=()):
 
         if not isinstance(slice_, tuple): slice_ = (slice_,)
 
-        vars = self._variables
+        if not isinstance(var_name, list): var_name = [var_name]
 
-        if not var_name is None:
-            for var in self._variables:
-                if var.name == var_name:
-                    vars = [var]
-                    break
+        var_names = []
 
-        for vn in vars:
-            var = self.get_variable_data(vn.index_key)
+        for key, var in self._variables.iteritems():
+            if not var_name is None:
+                if key in var_name:
+                    var_names.append(var)
+            else:
+                var_names.append(var)
 
-            ndims = len(var.shape)
+        for vn in var_names:
+            variable = self.get_variable_data(vn.index_key)
+
+            ndims = len(variable.shape)
             # Ensure the slice_ is the appropriate length
             if len(slice_) < ndims:
                 slice_ += (slice(None),) * (ndims-len(slice_))
 
-            arri = ArrayIterator(var, self._block_size)[slice_]
+            arri = ArrayIterator(variable, self._block_size)[slice_]
             for d in arri:
                 if d.dtype.char is "S":
                     # Obviously, we can't get the range of values for a string data type!

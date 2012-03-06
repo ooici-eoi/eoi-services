@@ -3,10 +3,13 @@ import urllib
 
 class AnchorParser(HTMLParser):
 
-    _link_names = []
-    _in_file_link = False
-    _directory_names = []
-    _in_dir_link = False
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self._link_names = []
+        self._in_file_link = False
+        self._directory_names = []
+        self._in_dir_link = False
+
     def handle_starttag(self, tag, attrs):
         if tag == 'img' and not self._in_file_link and not self._in_dir_link: #check the associated image first, to make sure it's a file link
             for key, value in attrs:

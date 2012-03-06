@@ -59,7 +59,7 @@ class BaseExternalDataHandler():
 
         if not self._variables is None:
             var_map = {}
-            for vk in self._variables:
+            for vk in self._variables.itervalues():
                 #var = self._data_array[vk.column_name]
                 #print vk.key
                 #print var[:]
