@@ -15,7 +15,7 @@ from interface.services.dm.iingestion_management_service import IngestionManagem
 from interface.services.dm.ipubsub_management_service import PubsubManagementServiceClient
 from interface.services.dm.itransform_management_service import TransformManagementServiceClient
 from nose.plugins.attrib import attr
-from prototype.sci_data.ctd_stream import usgs_stream_definition
+from prototype.sci_data.stream_defs import USGS_stream_definition
 from pyon.public import log
 import os
 import time
@@ -29,8 +29,8 @@ class USGSIntegrationTest(IonIntegrationTestCase):
 
     def test_usgs_integration(self):
         '''
-        test_dm_integration
-        Test full DM Services Integration
+        test_usgs_integration
+        Test full DM Services Integration using usgs
         '''
         cc = self.container
         assertions = self.assertTrue
@@ -65,7 +65,7 @@ class USGSIntegrationTest(IonIntegrationTestCase):
         ingestion_management_service.activate_ingestion_configuration(
             ingestion_configuration_id=ingestion_configuration_id)
 
-        usgs_stream_def = usgs_stream_definition()
+        usgs_stream_def = USGS_stream_definition()
 
         stream_def_id = pubsub_management_service.create_stream_definition(container=usgs_stream_def, name='Junk definition')
 
