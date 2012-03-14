@@ -82,7 +82,7 @@ class UsgsPublisher(StandaloneProcess):
     def _trigger_func(self, stream_id):
 
         #point_def = usgs_stream_definition(stream_id=stream_id)
-        point_constructor = PointSupplementConstructor(point_definition=self._usgs_def)
+        point_constructor = PointSupplementConstructor(point_definition=self._usgs_def, stream_id=stream_id)
 
         damsP = DataAcquisitionManagementServicePlaceholder()
         dsh = damsP.get_data_handler(ds_id=USGS)
@@ -115,4 +115,4 @@ class UsgsPublisher(StandaloneProcess):
 
             index += 1
 
-        time.sleep(2.0)
+#        time.sleep(2.0)

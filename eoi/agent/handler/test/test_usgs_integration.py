@@ -74,7 +74,7 @@ class USGSIntegrationTest(IonIntegrationTestCase):
         # Set up the producers (CTD Simulators)
         #---------------------------
         # Launch five simulated CTD producers
-        for iteration in xrange(5):
+        for iteration in xrange(2):
             # Make a stream to output on
 
             stream_id = pubsub_management_service.create_stream(stream_definition_id=stream_def_id)
@@ -177,7 +177,7 @@ class USGSIntegrationTest(IonIntegrationTestCase):
         # Make sure the transform capture worked
         #--------------------------------------------
 
-        time.sleep(3) # Give the other processes up to 3 seconds to catch up
+#        time.sleep(3) # Give the other processes up to 3 seconds to catch up
 
 
         #stats = os.stat(FileSystem.get_url(FS.TEMP,'transform_output'))
