@@ -55,10 +55,10 @@ class ExternalObservatoryAgent(ResourceAgent):
         edp_id = edp_acc[0].o
         log.debug("Found associated ExternalDataProvider: %s" % edp_id)
 
-        mdl_res, mdl_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=PRED.hasModel, object_type=RT.ExternalDataSourceModel)
+        mdl_res, mdl_acc = self.resreg_cli.find_objects(subject=dsrc_id, predicate=PRED.hasModel, object_type=RT.DataSourceModel)
         mdl_res = mdl_res[0]
         mdl_id = mdl_acc[0].o
-        log.debug("Found associated ExternalDataSourceModel: %s" % mdl_id)
+        log.debug("Found associated DataSourceModel: %s" % mdl_id)
 
         dprod_id, _ = self.resreg_cli.find_objects(subject=ext_dataset_id, predicate=PRED.hasOutputProduct, object_type=RT.DataProduct, id_only=True)
         dprod_id = dprod_id[0]
