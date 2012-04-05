@@ -290,7 +290,7 @@ class TestDapExternalDataHandler(PyonTestCase):
         ## Tests the case where the fingerprint is force-recalculated
         fingerprint = dsh.get_fingerprint(recalculate=True)
         ## Uncomment this line when the guts of "get_fingerprint" has changed to print the new "correct" value - replace "self._ds_base_sig" with the output
-
+        raise StandardError(str(fingerprint))
         self.assertEqual(fingerprint, self._ds_base_sig)
 
         ## Tests the case where the fingerprint has already been calculated
